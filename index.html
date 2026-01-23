@@ -1,0 +1,4773 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Supervision Centralisée - Stations de Dessalement</title>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+/* ================= RESET & BASE STYLES ================= */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
+    font-size: 7px;
+    transition: all 0.5s ease;
+}
+
+/* ================= THÈMES ================= */
+body.dark-mode {
+    background: linear-gradient(135deg, #0a1929 0%, #081018 100%);
+}
+
+body.light-mode {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    color: #333;
+}
+
+/* ================= APP LAYOUT ================= */
+.app {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    position: relative;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 15px;
+    flex-shrink: 0;
+    transition: all 0.5s ease;
+    position: relative;
+    z-index: 100;
+    height: 100%;
+    overflow: hidden;
+}
+
+.sidebar.expanded {
+    width: 180px;
+    align-items: flex-start;
+    padding-left: 10px;
+}
+
+body.dark-mode .sidebar {
+    background: rgba(11, 21, 32, 0.95);
+    border-right: 0.5px solid rgba(196, 77, 138, 0.3);
+}
+
+body.light-mode .sidebar {
+    background: rgba(245, 247, 250, 0.95);
+    border-right: 0.5px solid rgba(220, 53, 69, 0.3);
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 12.5px 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 6px;
+    border-radius: 6px;
+    position: relative;
+    min-height: 28px;
+}
+
+body.dark-mode .sidebar-item {
+    color: #b14b5a;
+}
+
+body.light-mode .sidebar-item {
+    color: #dc3545;
+}
+
+.sidebar-item:hover {
+    transform: translateX(2.5px);
+}
+
+body.dark-mode .sidebar-item:hover {
+    color: #4da6ff;
+    background: rgba(77, 166, 255, 0.15);
+}
+
+body.light-mode .sidebar-item:hover {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.sidebar-item.active {
+    border-left: 3px solid;
+}
+
+body.dark-mode .sidebar-item.active {
+    color: #4da6ff;
+    background: rgba(77, 166, 255, 0.2);
+    box-shadow: 0 0 10px rgba(77, 166, 255, 0.3);
+    border-left-color: #4da6ff;
+}
+
+body.light-mode .sidebar-item.active {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.15);
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.2);
+    border-left-color: #dc3545;
+}
+
+.sidebar-icon {
+    font-size: 11px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+.sidebar.expanded .sidebar-icon {
+    margin-right: 10px;
+}
+
+.sidebar-item:hover .sidebar-icon {
+    transform: scale(1.1);
+}
+
+.sidebar-text {
+    font-size: 8px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    max-width: 0;
+}
+
+.sidebar.expanded .sidebar-text {
+    opacity: 1;
+    transform: translateX(0);
+    max-width: 120px;
+}
+
+body.dark-mode .sidebar-text {
+    color: #f0f0f0;
+}
+
+body.light-mode .sidebar-text {
+    color: #333;
+}
+
+/* Icone custom pour Chatbot avec casque */
+.chatbot-icon {
+    position: relative;
+    width: 16px;
+    height: 16px;
+}
+
+.chatbot-head {
+    width: 12px;
+    height: 12px;
+    background: currentColor;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+}
+
+.chatbot-helmet {
+    width: 14px;
+    height: 8px;
+    border: 2px solid currentColor;
+    border-radius: 4px;
+    position: absolute;
+    top: -2px;
+    left: 1px;
+    border-bottom: none;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.chatbot-helmet:before {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 3px;
+    background: currentColor;
+    border-radius: 1px;
+    top: -1px;
+    left: 3px;
+}
+
+/* ================= MAIN CONTENT ================= */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 10px;
+    gap: 10px;
+    transition: all 0.5s ease;
+}
+
+/* ================= PAGES ================= */
+.page {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.page.active {
+    display: flex;
+}
+
+/* TOPBAR */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7.5px 12.5px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .topbar {
+    background: rgba(14, 31, 51, 0.7);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .topbar {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dc3545;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.topbar h1 {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 7.5px;
+    font-weight: 300;
+}
+
+body.dark-mode .topbar h1 {
+    color: #f0f0f0;
+}
+
+body.light-mode .topbar h1 {
+    color: #333;
+    font-weight: 600;
+}
+
+.topbar h1 i {
+    font-size: 13px;
+}
+
+body.dark-mode .topbar h1 i {
+    color: #4da6ff;
+}
+
+body.light-mode .topbar h1 i {
+    color: #dc3545;
+}
+
+/* ================= DIGITAL CLOCK ================= */
+.digital-clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 12px;
+    border-radius: 8px;
+    min-width: 120px;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .digital-clock {
+    background: rgba(20, 40, 65, 0.8);
+    border: 1px solid rgba(196, 77, 138, 0.4);
+    box-shadow: 0 0 15px rgba(77, 166, 255, 0.1);
+}
+
+body.light-mode .digital-clock {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.clock-time {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+body.dark-mode .clock-time {
+    background: linear-gradient(135deg, #4da6ff, #c44d8a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 10px rgba(77, 166, 255, 0.3);
+}
+
+body.light-mode .clock-time {
+    background: linear-gradient(135deg, #dc3545, #ff6b6b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.clock-date {
+    font-size: 6px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+body.dark-mode .clock-date {
+    color: #4da6ff;
+}
+
+body.light-mode .clock-date {
+    color: #dc3545;
+}
+
+.clock-separator {
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* THEME SWITCH */
+.theme-switch {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.theme-switch-label {
+    font-size: 6px;
+    font-weight: 600;
+}
+
+body.dark-mode .theme-switch-label {
+    color: #aaa;
+}
+
+body.light-mode .theme-switch-label {
+    color: #666;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 30px;
+    height: 16px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #0e1f33;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+body.light-mode .slider {
+    background-color: #dc3545;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4da6ff;
+}
+
+body.light-mode input:checked + .slider {
+    background-color: #28a745;
+}
+
+input:checked + .slider:before {
+    transform: translateX(14px);
+}
+
+.slider i {
+    position: absolute;
+    font-size: 7px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.slider .fa-moon {
+    left: 4px;
+    color: #4da6ff;
+}
+
+.slider .fa-sun {
+    right: 4px;
+    color: #f1c40f;
+}
+
+/* USER PROFILE */
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 7.5px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .user-profile {
+    background: rgba(20, 40, 65, 0.8);
+    border: 0.5px solid rgba(196, 77, 138, 0.4);
+}
+
+body.light-mode .user-profile {
+    background: rgba(255, 255, 255, 0.9);
+    border: 0.5px solid rgba(220, 53, 69, 0.2);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.user-avatar {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: white;
+}
+
+body.dark-mode .user-avatar {
+    background: linear-gradient(135deg, #4da6ff, #c44d8a);
+}
+
+body.light-mode .user-avatar {
+    background: linear-gradient(135deg, #dc3545, #ff6b6b);
+}
+
+.user-info {
+    flex: 1;
+}
+
+.user-name {
+    font-size: 8px;
+    font-weight: 600;
+    margin-bottom: 1.5px;
+}
+
+body.dark-mode .user-name {
+    color: #f0f0f0;
+}
+
+body.light-mode .user-name {
+    color: #333;
+}
+
+.user-role {
+    font-size: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+body.dark-mode .user-role {
+    color: #aaa;
+}
+
+body.light-mode .user-role {
+    color: #666;
+}
+
+.user-status {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+body.dark-mode .user-status {
+    background: #27ae60;
+}
+
+body.light-mode .user-status {
+    background: #28a745;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* ================= DASHBOARD PAGE ================= */
+/* MAP SECTION */
+.map-section {
+    flex: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .map-section {
+    background: rgba(14, 31, 51, 0.7);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .map-section {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dc3545;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.map-section h3 {
+    padding: 10px 12.5px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .map-section h3 {
+    color: #f0f0f0;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 0.5px solid rgba(196, 77, 138, 0.3);
+}
+
+body.light-mode .map-section h3 {
+    color: #333;
+    background: rgba(220, 53, 69, 0.05);
+    border-bottom: 0.5px solid rgba(220, 53, 69, 0.2);
+}
+
+.map-section h3 i {
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .map-section h3 i {
+    color: #4da6ff;
+}
+
+body.light-mode .map-section h3 i {
+    color: #dc3545;
+}
+
+.map-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+#map {
+    flex: 1;
+    min-height: 0;
+}
+
+/* Stations list sidebar */
+.stations-list-sidebar {
+    width: 160px;
+    padding: 10px;
+    overflow-y: auto;
+    flex-shrink: 0;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .stations-list-sidebar {
+    background: rgba(11, 21, 32, 0.95);
+    border-left: 1px solid #c44d8a;
+}
+
+body.light-mode .stations-list-sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    border-left: 1px solid #dc3545;
+}
+
+.stations-list-sidebar h4 {
+    margin-bottom: 10px;
+    font-size: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+body.dark-mode .stations-list-sidebar h4 {
+    color: #4da6ff;
+}
+
+body.light-mode .stations-list-sidebar h4 {
+    color: #dc3545;
+}
+
+#stationsList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.station-list-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+    padding: 7.5px;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+body.light-mode .station-list-item {
+    background: rgba(0, 0, 0, 0.02);
+    border: 0.5px solid rgba(0, 0, 0, 0.05);
+}
+
+.station-list-item:hover {
+    transform: translateX(2.5px);
+}
+
+body.dark-mode .station-list-item:hover {
+    background: rgba(77, 166, 255, 0.1);
+    border-color: rgba(77, 166, 255, 0.3);
+}
+
+body.light-mode .station-list-item:hover {
+    background: rgba(220, 53, 69, 0.05);
+    border-color: rgba(220, 53, 69, 0.2);
+}
+
+.station-list-item.selected {
+    border: 1px solid;
+}
+
+body.dark-mode .station-list-item.selected {
+    background: rgba(77, 166, 255, 0.15);
+    border-color: #4da6ff;
+}
+
+body.light-mode .station-list-item.selected {
+    background: rgba(220, 53, 69, 0.1);
+    border-color: #dc3545;
+}
+
+.station-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.station-name {
+    font-weight: 600;
+    font-size: 7px;
+}
+
+body.dark-mode .station-name {
+    color: #f0f0f0;
+}
+
+body.light-mode .station-name {
+    color: #333;
+}
+
+.station-region {
+    font-size: 5.5px;
+    margin-top: 1px;
+}
+
+body.dark-mode .station-region {
+    color: #aaa;
+}
+
+body.light-mode .station-region {
+    color: #666;
+}
+
+.station-status {
+    padding: 2px 5px;
+    border-radius: 6px;
+    font-size: 5.5px;
+    font-weight: 600;
+}
+
+.station-data {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.data-item {
+    text-align: center;
+}
+
+.data-label {
+    font-size: 5px;
+    margin-bottom: 1.5px;
+}
+
+body.dark-mode .data-label {
+    color: #888;
+}
+
+body.light-mode .data-label {
+    color: #777;
+}
+
+.data-value {
+    font-size: 7px;
+    font-weight: 600;
+}
+
+body.dark-mode .data-value {
+    color: #f0f0f0;
+}
+
+body.light-mode .data-value {
+    color: #333;
+}
+
+/* ================= KPI SECTION ================= */
+.kpi-section {
+    border-radius: 10px;
+    padding: 10px;
+    flex-shrink: 0;
+    margin-top: 10px;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .kpi-section {
+    background: rgba(14, 31, 51, 0.7);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .kpi-section {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dc3545;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.kpi-section h3 {
+    font-size: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body.dark-mode .kpi-section h3 {
+    color: #f0f0f0;
+}
+
+body.light-mode .kpi-section h3 {
+    color: #333;
+}
+
+.kpi-section h3 i {
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .kpi-section h3 i {
+    color: #4da6ff;
+}
+
+body.light-mode .kpi-section h3 i {
+    color: #dc3545;
+}
+
+.kpi-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7.5px;
+}
+
+/* KPI Widgets */
+.kpi-widget {
+    background: rgba(20, 40, 65, 0.8);
+    border-radius: 6px;
+    padding: 7.5px;
+    min-width: 90px;
+    flex: 1;
+    transition: all 0.3s ease;
+}
+
+body.light-mode .kpi-widget {
+    background: rgba(255, 255, 255, 0.7);
+    border: 0.5px solid rgba(220, 53, 69, 0.1);
+}
+
+body.dark-mode .kpi-widget {
+    border: 0.5px solid rgba(196, 77, 138, 0.2);
+}
+
+.kpi-widget:hover {
+    transform: translateY(-2.5px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .kpi-widget:hover {
+    border-color: rgba(196, 77, 138, 0.5);
+}
+
+body.light-mode .kpi-widget:hover {
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+/* Counter Widget */
+.kpi-counter {
+    text-align: center;
+}
+
+.counter-value {
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    margin: 5px 0;
+}
+
+body.dark-mode .counter-value {
+    background: linear-gradient(135deg, #4da6ff, #c44d8a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.light-mode .counter-value {
+    background: linear-gradient(135deg, #dc3545, #ff6b6b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Badge Widget */
+.kpi-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.badge-icon {
+    width: 22.5px;
+    height: 22.5px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+.badge-content {
+    flex: 1;
+}
+
+.badge-score {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Progress Widget */
+.kpi-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.progress-bar {
+    height: 3px;
+    border-radius: 1.5px;
+    overflow: hidden;
+}
+
+body.dark-mode .progress-bar {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.light-mode .progress-bar {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 1.5px;
+    transition: width 1s ease;
+}
+
+/* Donut Widget */
+.kpi-donut {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.donut-container {
+    position: relative;
+    width: 30px;
+    height: 30px;
+}
+
+.donut-svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+}
+
+.donut-circle-bg {
+    fill: none;
+    stroke-width: 3;
+}
+
+body.dark-mode .donut-circle-bg {
+    stroke: rgba(255, 255, 255, 0.1);
+}
+
+body.light-mode .donut-circle-bg {
+    stroke: rgba(0, 0, 0, 0.1);
+}
+
+.donut-circle {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+}
+
+.donut-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 8px;
+    font-weight: 600;
+}
+
+/* KPI Labels */
+.kpi-label {
+    font-size: 6px;
+    margin-bottom: 2.5px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+body.dark-mode .kpi-label {
+    color: #aaa;
+}
+
+body.light-mode .kpi-label {
+    color: #666;
+}
+
+.kpi-unit {
+    font-size: 5.5px;
+    margin-top: 2.5px;
+}
+
+body.dark-mode .kpi-unit {
+    color: #888;
+}
+
+body.light-mode .kpi-unit {
+    color: #777;
+}
+
+/* Status Colors - Communs aux deux modes */
+.kpi-good { color: #27ae60; }
+.kpi-warning { color: #f39c12; }
+.kpi-critical { color: #e74c3c; }
+
+/* ================= STATIONS PARK PAGE ================= */
+.stations-park-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 10px;
+    padding: 10px;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .stations-park-section {
+    background: rgba(14, 31, 51, 0.7);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .stations-park-section {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dc3545;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stations-park-header {
+    margin-bottom: 10px;
+    padding-bottom: 7.5px;
+    border-bottom: 1px solid;
+}
+
+body.dark-mode .stations-park-header {
+    border-bottom-color: rgba(196, 77, 138, 0.3);
+}
+
+body.light-mode .stations-park-header {
+    border-bottom-color: rgba(220, 53, 69, 0.3);
+}
+
+.stations-park-header h3 {
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body.dark-mode .stations-park-header h3 {
+    color: #f0f0f0;
+}
+
+body.light-mode .stations-park-header h3 {
+    color: #333;
+}
+
+.stations-park-header h3 i {
+    color: #4da6ff;
+}
+
+body.light-mode .stations-park-header h3 i {
+    color: #dc3545;
+}
+
+.stations-park-info {
+    font-size: 5px;
+    text-align: right;
+    margin-top: 3px;
+}
+
+body.dark-mode .stations-park-info {
+    color: #4da6ff;
+}
+
+body.light-mode .stations-park-info {
+    color: #dc3545;
+}
+
+.stations-park-table-container {
+    flex: 1;
+    overflow-y: auto;
+    border-radius: 5px;
+}
+
+body.dark-mode .stations-park-table-container {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+body.light-mode .stations-park-table-container {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* ================= MAP PAGE ================= */
+.map-page-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 10px;
+    padding: 10px;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .map-page-section {
+    background: rgba(14, 31, 51, 0.7);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .map-page-section {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dc3545;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.map-page-container {
+    flex: 1;
+    overflow: hidden;
+    border-radius: 8px;
+    min-height: 0;
+}
+
+#fullMap {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+}
+
+/* ================= CHATBOT AI PAGE ================= */
+.chatbot-ai-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 10px;
+    padding: 10px;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .chatbot-ai-section {
+    background: rgba(14, 31, 51, 0.7);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .chatbot-ai-section {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dc3545;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.chatbot-stations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.chatbot-station-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+body.dark-mode .chatbot-station-item {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.light-mode .chatbot-station-item {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.chatbot-station-item:hover {
+    transform: translateX(3px);
+}
+
+body.dark-mode .chatbot-station-item:hover {
+    background: rgba(77, 166, 255, 0.1);
+    border-color: rgba(77, 166, 255, 0.3);
+}
+
+body.light-mode .chatbot-station-item:hover {
+    background: rgba(220, 53, 69, 0.05);
+    border-color: rgba(220, 53, 69, 0.2);
+}
+
+.chatbot-station-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.chatbot-station-name {
+    font-size: 8px;
+    font-weight: 600;
+}
+
+body.dark-mode .chatbot-station-name {
+    color: #f0f0f0;
+}
+
+body.light-mode .chatbot-station-name {
+    color: #333;
+}
+
+.chatbot-station-region {
+    font-size: 5.5px;
+}
+
+body.dark-mode .chatbot-station-region {
+    color: #aaa;
+}
+
+body.light-mode .chatbot-station-region {
+    color: #666;
+}
+
+.chatbot-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 6px;
+    font-weight: 600;
+    min-width: 70px;
+    justify-content: center;
+}
+
+.chatbot-status-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+}
+
+.chatbot-online {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.chatbot-online .chatbot-status-dot {
+    background: #27ae60;
+    animation: pulse 1.5s infinite;
+}
+
+.chatbot-offline {
+    background: rgba(149, 165, 166, 0.1);
+    color: #95a5a6;
+    border: 1px solid rgba(149, 165, 166, 0.3);
+}
+
+.chatbot-offline .chatbot-status-dot {
+    background: #95a5a6;
+}
+
+.chatbot-consult {
+    background: rgba(243, 156, 18, 0.1);
+    color: #f39c12;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    animation: pulseWarning 2s infinite;
+}
+
+.chatbot-consult .chatbot-status-dot {
+    background: #f39c12;
+}
+
+@keyframes pulseWarning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Chat Modal */
+.chat-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 15px;
+    backdrop-filter: blur(5px);
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .chat-modal {
+    background: rgba(0, 0, 0, 0.97);
+}
+
+body.light-mode .chat-modal {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.chat-modal-content {
+    width: 90%;
+    max-width: 500px;
+    height: 70vh;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 40px rgba(77, 166, 255, 0.2);
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .chat-modal-content {
+    background: linear-gradient(135deg, #0e1f33, #0a1522);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .chat-modal-content {
+    background: linear-gradient(135deg, #ffffff, #f5f5f5);
+    border: 1px solid #dc3545;
+    box-shadow: 0 0 40px rgba(220, 53, 69, 0.2);
+}
+
+.chat-modal-header {
+    padding: 15px;
+    border-bottom: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+body.dark-mode .chat-modal-header {
+    border-bottom-color: rgba(196, 77, 138, 0.3);
+    background: rgba(20, 40, 65, 0.8);
+}
+
+body.light-mode .chat-modal-header {
+    border-bottom-color: rgba(220, 53, 69, 0.3);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.chat-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+body.dark-mode .chat-modal-title {
+    color: #f0f0f0;
+}
+
+body.light-mode .chat-modal-title {
+    color: #333;
+}
+
+.chat-modal-close {
+    background: none;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .chat-modal-close {
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.2);
+}
+
+body.light-mode .chat-modal-close {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.2);
+}
+
+.chat-modal-close:hover {
+    transform: rotate(90deg);
+}
+
+body.dark-mode .chat-modal-close:hover {
+    background: rgba(231, 76, 60, 0.4);
+}
+
+body.light-mode .chat-modal-close:hover {
+    background: rgba(220, 53, 69, 0.4);
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.chat-message {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 7px;
+    line-height: 1.4;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-message.bot {
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+body.dark-mode .chat-message.bot {
+    background: rgba(77, 166, 255, 0.2);
+    color: #f0f0f0;
+    border: 1px solid rgba(77, 166, 255, 0.3);
+}
+
+body.light-mode .chat-message.bot {
+    background: rgba(77, 166, 255, 0.1);
+    color: #333;
+    border: 1px solid rgba(77, 166, 255, 0.2);
+}
+
+.chat-message.user {
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+body.dark-mode .chat-message.user {
+    background: rgba(39, 174, 96, 0.2);
+    color: #f0f0f0;
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+body.light-mode .chat-message.user {
+    background: rgba(39, 174, 96, 0.1);
+    color: #333;
+    border: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+.chat-message.analysis {
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.2), rgba(196, 77, 138, 0.2));
+    border: 1px solid rgba(155, 89, 182, 0.3);
+    margin-top: 10px;
+}
+
+body.dark-mode .chat-message.analysis {
+    color: #f0f0f0;
+}
+
+body.light-mode .chat-message.analysis {
+    color: #333;
+}
+
+.chat-input-container {
+    padding: 10px 15px;
+    border-top: 1px solid;
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+}
+
+body.dark-mode .chat-input-container {
+    border-top-color: rgba(196, 77, 138, 0.3);
+    background: rgba(20, 40, 65, 0.8);
+}
+
+body.light-mode .chat-input-container {
+    border-top-color: rgba(220, 53, 69, 0.3);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.chat-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 7px;
+    border: 1px solid;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .chat-input {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f0f0f0;
+    border-color: rgba(196, 77, 138, 0.3);
+}
+
+body.light-mode .chat-input {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+.chat-input:focus {
+    border-color: #4da6ff;
+}
+
+body.light-mode .chat-input:focus {
+    border-color: #dc3545;
+}
+
+.chat-send-btn {
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: none;
+    font-size: 7px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+body.dark-mode .chat-send-btn {
+    background: linear-gradient(135deg, #4da6ff, #2c80ff);
+    color: white;
+}
+
+body.light-mode .chat-send-btn {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.chat-send-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.chat-timestamp {
+    font-size: 5px;
+    text-align: center;
+    color: #888;
+    margin: 5px 0;
+}
+
+body.light-mode .chat-timestamp {
+    color: #777;
+}
+
+/* TABLE SECTION (Commun aux deux pages) */
+.stations-table-section {
+    border-radius: 10px;
+    padding: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    margin-top: 10px;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .stations-table-section {
+    background: rgba(14, 31, 51, 0.7);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .stations-table-section {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dc3545;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stations-table-section h3 {
+    font-size: 10px;
+    margin-bottom: 7.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body.dark-mode .stations-table-section h3 {
+    color: #f0f0f0;
+}
+
+body.light-mode .stations-table-section h3 {
+    color: #333;
+}
+
+.table-container {
+    flex: 1;
+    overflow-y: auto;
+    border-radius: 5px;
+    max-height: 150px;
+}
+
+body.dark-mode .table-container {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+body.light-mode .table-container {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.table-info {
+    font-size: 5px;
+    text-align: right;
+    margin-bottom: 5px;
+    padding-right: 5px;
+}
+
+body.dark-mode .table-info {
+    color: #4da6ff;
+}
+
+body.light-mode .table-info {
+    color: #dc3545;
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 400px;
+}
+
+thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+body.dark-mode thead {
+    background: rgba(26, 42, 58, 0.9);
+}
+
+body.light-mode thead {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+th {
+    padding: 7.5px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 1px solid;
+    font-size: 7px;
+    white-space: nowrap;
+}
+
+body.dark-mode th {
+    color: #f0f0f0;
+    border-bottom-color: #c44d8a;
+}
+
+body.light-mode th {
+    color: #333;
+    border-bottom-color: #dc3545;
+}
+
+td {
+    padding: 7.5px;
+    border-bottom: 0.5px solid;
+    font-size: 7px;
+    white-space: nowrap;
+}
+
+body.dark-mode td {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+body.light-mode td {
+    border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+tr {
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    height: 25px;
+}
+
+body.dark-mode tr:hover {
+    background: rgba(77, 166, 255, 0.1);
+}
+
+body.light-mode tr:hover {
+    background: rgba(220, 53, 69, 0.05);
+}
+
+body.dark-mode tr.selected {
+    background: rgba(77, 166, 255, 0.15);
+}
+
+body.light-mode tr.selected {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+/* Status Cells */
+.status-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 6px;
+    border-radius: 7.5px;
+    font-size: 5.5px;
+    font-weight: 600;
+}
+
+.status-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+}
+
+.ok { 
+    color: #27ae60; 
+    background: rgba(39, 174, 96, 0.1);
+}
+.ok .status-dot { background: #27ae60; }
+
+.minor { 
+    color: #e67e22; 
+    background: rgba(230, 126, 34, 0.1);
+}
+.minor .status-dot { background: #e67e22; }
+
+.major { 
+    color: #d35400; 
+    background: rgba(211, 84, 0, 0.1);
+}
+.major .status-dot { background: #d35400; }
+
+.critical { 
+    color: #e74c3c; 
+    background: rgba(231, 76, 60, 0.1);
+}
+.critical .status-dot { background: #e74c3c; }
+
+.warn { 
+    color: #f39c12; 
+    background: rgba(243, 156, 18, 0.1);
+}
+.warn .status-dot { background: #f39c12; }
+
+/* ================= MODAL AMÉLIORÉ ================= */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 15px;
+    backdrop-filter: blur(5px);
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .modal {
+    background: rgba(0, 0, 0, 0.97);
+}
+
+body.light-mode .modal {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 0 40px rgba(77, 166, 255, 0.2);
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .modal-content {
+    background: linear-gradient(135deg, #0e1f33, #0a1522);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .modal-content {
+    background: linear-gradient(135deg, #ffffff, #f5f5f5);
+    border: 1px solid #dc3545;
+    box-shadow: 0 0 40px rgba(220, 53, 69, 0.2);
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    z-index: 10;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .modal-close {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+body.light-mode .modal-close {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+.modal-close:hover {
+    transform: rotate(90deg);
+}
+
+body.dark-mode .modal-close:hover {
+    background: rgba(231, 76, 60, 0.4);
+}
+
+body.light-mode .modal-close:hover {
+    background: rgba(220, 53, 69, 0.4);
+}
+
+.modal-header {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+body.dark-mode .modal-header {
+    border-bottom-color: rgba(196, 77, 138, 0.3);
+}
+
+body.light-mode .modal-header {
+    border-bottom-color: rgba(220, 53, 69, 0.3);
+}
+
+.modal-header-left {
+    flex: 1;
+}
+
+.modal-title {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+body.dark-mode .modal-title {
+    color: #f0f0f0;
+}
+
+body.light-mode .modal-title {
+    color: #333;
+}
+
+.modal-subtitle {
+    font-size: 10px;
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body.dark-mode .modal-subtitle {
+    color: #4da6ff;
+}
+
+body.light-mode .modal-subtitle {
+    color: #dc3545;
+}
+
+.station-hologram {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    perspective: 1000px;
+}
+
+.hologram-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    animation: rotateHologram 20s infinite linear;
+}
+
+.hologram-base {
+    position: absolute;
+    width: 60px;
+    height: 20px;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 3px;
+    opacity: 0.7;
+}
+
+body.dark-mode .hologram-base {
+    background: linear-gradient(135deg, #4da6ff, #c44d8a);
+}
+
+body.light-mode .hologram-base {
+    background: linear-gradient(135deg, #dc3545, #ff6b6b);
+}
+
+.hologram-tank {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 1px solid;
+}
+
+body.dark-mode .hologram-tank {
+    background: linear-gradient(135deg, rgba(77, 166, 255, 0.3), rgba(196, 77, 138, 0.3));
+    border-color: rgba(77, 166, 255, 0.5);
+}
+
+body.light-mode .hologram-tank {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.3), rgba(255, 107, 107, 0.3));
+    border-color: rgba(220, 53, 69, 0.5);
+}
+
+.hologram-pipe {
+    position: absolute;
+}
+
+body.dark-mode .hologram-pipe {
+    background: rgba(77, 166, 255, 0.5);
+}
+
+body.light-mode .hologram-pipe {
+    background: rgba(220, 53, 69, 0.5);
+}
+
+.hologram-pipe-1 {
+    width: 30px;
+    height: 3px;
+    bottom: 30px;
+    left: 10px;
+}
+
+.hologram-pipe-2 {
+    width: 3px;
+    height: 20px;
+    bottom: 30px;
+    right: 20px;
+}
+
+.hologram-light {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 10px;
+    animation: pulseLight 2s infinite alternate;
+}
+
+body.dark-mode .hologram-light {
+    background: rgba(77, 166, 255, 0.8);
+    box-shadow: 0 0 10px rgba(77, 166, 255, 0.8);
+}
+
+body.light-mode .hologram-light {
+    background: rgba(220, 53, 69, 0.8);
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.8);
+}
+
+@keyframes rotateHologram {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
+}
+
+@keyframes pulseLight {
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.modal-body {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+.modal-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.modal-section {
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid;
+    transition: transform 0.3s ease;
+}
+
+body.dark-mode .modal-section {
+    background: rgba(20, 40, 65, 0.8);
+    border-color: rgba(196, 77, 138, 0.2);
+}
+
+body.light-mode .modal-section {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(220, 53, 69, 0.2);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.modal-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .modal-section:hover {
+    border-color: rgba(196, 77, 138, 0.5);
+}
+
+body.light-mode .modal-section:hover {
+    border-color: rgba(220, 53, 69, 0.5);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid;
+}
+
+body.dark-mode .section-header {
+    border-bottom-color: rgba(77, 166, 255, 0.2);
+}
+
+body.light-mode .section-header {
+    border-bottom-color: rgba(220, 53, 69, 0.2);
+}
+
+.section-header i {
+    font-size: 12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.dark-mode .section-header i {
+    color: #4da6ff;
+    background: rgba(77, 166, 255, 0.1);
+}
+
+body.light-mode .section-header i {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.section-header h4 {
+    font-size: 11px;
+    font-weight: 600;
+    flex: 1;
+}
+
+body.dark-mode .section-header h4 {
+    color: #f0f0f0;
+}
+
+body.light-mode .section-header h4 {
+    color: #333;
+}
+
+.modal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.data-card {
+    border-radius: 6px;
+    padding: 10px;
+    border-left: 3px solid;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .data-card {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.light-mode .data-card {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.data-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(3px);
+}
+
+body.light-mode .data-card:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.data-card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.data-card-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+}
+
+.data-card-label {
+    font-size: 6.5px;
+    flex: 1;
+    font-weight: 500;
+}
+
+body.dark-mode .data-card-label {
+    color: #aaa;
+}
+
+body.light-mode .data-card-label {
+    color: #666;
+}
+
+.data-card-value {
+    font-size: 12px;
+    font-weight: 700;
+    margin: 4px 0;
+}
+
+body.dark-mode .data-card-value {
+    color: #f0f0f0;
+}
+
+body.light-mode .data-card-value {
+    color: #333;
+}
+
+.data-card-unit {
+    font-size: 6px;
+    font-weight: 400;
+}
+
+body.dark-mode .data-card-unit {
+    color: #888;
+}
+
+body.light-mode .data-card-unit {
+    color: #777;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 6px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.indicator-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+}
+
+/* Icon colors - Communs aux deux modes */
+.icon-blue { background: rgba(77, 166, 255, 0.2); color: #4da6ff; }
+.icon-green { background: rgba(39, 174, 96, 0.2); color: #27ae60; }
+.icon-red { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+.icon-orange { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
+.icon-purple { background: rgba(155, 89, 182, 0.2); color: #9b59b6; }
+.icon-cyan { background: rgba(26, 188, 156, 0.2); color: #1abc9c; }
+.icon-yellow { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
+.icon-pink { background: rgba(196, 77, 138, 0.2); color: #c44d8a; }
+
+body.light-mode .icon-blue { background: rgba(77, 166, 255, 0.1); }
+body.light-mode .icon-green { background: rgba(39, 174, 96, 0.1); }
+body.light-mode .icon-red { background: rgba(231, 76, 60, 0.1); }
+body.light-mode .icon-orange { background: rgba(243, 156, 18, 0.1); }
+body.light-mode .icon-purple { background: rgba(155, 89, 182, 0.1); }
+body.light-mode .icon-cyan { background: rgba(26, 188, 156, 0.1); }
+body.light-mode .icon-yellow { background: rgba(241, 196, 15, 0.1); }
+body.light-mode .icon-pink { background: rgba(196, 77, 138, 0.1); }
+
+/* Sidebar stats */
+.station-stats-sidebar {
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .station-stats-sidebar {
+    background: rgba(11, 21, 32, 0.95);
+    border-color: rgba(196, 77, 138, 0.3);
+}
+
+body.light-mode .station-stats-sidebar {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(220, 53, 69, 0.3);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stats-header {
+    font-size: 10px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body.dark-mode .stats-header {
+    color: #4da6ff;
+}
+
+body.light-mode .stats-header {
+    color: #dc3545;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid;
+}
+
+body.dark-mode .stat-item {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+body.light-mode .stat-item {
+    border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+.stat-label {
+    font-size: 7px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+body.dark-mode .stat-label {
+    color: #aaa;
+}
+
+body.light-mode .stat-label {
+    color: #666;
+}
+
+.stat-value {
+    font-size: 9px;
+    font-weight: 700;
+}
+
+body.dark-mode .stat-value {
+    color: #f0f0f0;
+}
+
+body.light-mode .stat-value {
+    color: #333;
+}
+
+.stat-trend {
+    font-size: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 5px;
+}
+
+.trend-up { background: rgba(39, 174, 96, 0.2); color: #27ae60; }
+.trend-down { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+.trend-stable { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
+
+.progress-circle {
+    width: 60px;
+    height: 60px;
+    margin: 15px auto;
+    position: relative;
+}
+
+.circle-bg {
+    fill: none;
+    stroke-width: 3;
+}
+
+body.dark-mode .circle-bg {
+    stroke: rgba(255, 255, 255, 0.1);
+}
+
+body.light-mode .circle-bg {
+    stroke: rgba(0, 0, 0, 0.1);
+}
+
+.circle-progress {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+}
+
+.progress-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+body.dark-mode .progress-value {
+    color: #f0f0f0;
+}
+
+body.light-mode .progress-value {
+    color: #333;
+}
+
+/* Performance chart */
+.performance-chart {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid;
+}
+
+body.dark-mode .performance-chart {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+body.light-mode .performance-chart {
+    border-top-color: rgba(0, 0, 0, 0.1);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.chart-title {
+    font-size: 8px;
+    font-weight: 600;
+}
+
+body.dark-mode .chart-title {
+    color: #f0f0f0;
+}
+
+body.light-mode .chart-title {
+    color: #333;
+}
+
+.chart-period {
+    font-size: 6px;
+}
+
+body.dark-mode .chart-period {
+    color: #888;
+}
+
+body.light-mode .chart-period {
+    color: #777;
+}
+
+.chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 40px;
+    margin-top: 10px;
+}
+
+.chart-bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: height 0.3s ease;
+}
+
+body.dark-mode .chart-bar {
+    background: linear-gradient(to top, #4da6ff, #c44d8a);
+}
+
+body.light-mode .chart-bar {
+    background: linear-gradient(to top, #dc3545, #ff6b6b);
+}
+
+.chart-bar:hover {
+    opacity: 0.8;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.action-btn {
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    font-size: 7px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    color: white;
+}
+
+body.dark-mode .btn-primary {
+    background: linear-gradient(135deg, #4da6ff, #2c80ff);
+}
+
+body.light-mode .btn-primary {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+}
+
+.btn-secondary {
+    border: 1px solid;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f0f0f0;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.light-mode .btn-secondary {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* ================= SCROLLBAR ================= */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    border-radius: 3px;
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.light-mode ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #c44d8a, #4da6ff);
+}
+
+body.light-mode ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #ff6b6b, #dc3545);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    opacity: 0.8;
+}
+
+/* ================= OVERLAY ================= */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    display: none;
+    backdrop-filter: blur(2px);
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 1400px) {
+    .kpi-widget {
+        min-width: 80px;
+    }
+    
+    .stations-list-sidebar {
+        width: 140px;
+    }
+    
+    .modal-body {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1200px) {
+    .map-container {
+        flex-direction: column;
+    }
+    
+    .stations-list-sidebar {
+        width: 100%;
+        height: 100px;
+        border-left: none;
+        border-top: 1px solid;
+    }
+    
+    body.dark-mode .stations-list-sidebar {
+        border-top-color: #c44d8a;
+    }
+    
+    body.light-mode .stations-list-sidebar {
+        border-top-color: #dc3545;
+    }
+    
+    .modal-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 992px) {
+    .kpi-container {
+        gap: 5px;
+    }
+    
+    .kpi-widget {
+        min-width: 70px;
+        padding: 6px;
+    }
+    
+    .topbar {
+        flex-direction: column;
+        gap: 7.5px;
+        text-align: center;
+    }
+    
+    .user-profile {
+        width: 100%;
+    }
+    
+    .modal-content {
+        max-width: 95%;
+        padding: 15px;
+    }
+    
+    .sidebar.expanded {
+        width: 160px;
+    }
+    
+    .digital-clock {
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    .chat-modal-content {
+        width: 95%;
+        height: 80vh;
+    }
+}
+
+@media (max-width: 768px) {
+    .kpi-container {
+        flex-direction: column;
+    }
+    
+    .kpi-widget {
+        width: 100%;
+    }
+    
+    .modal-body {
+        grid-template-columns: 1fr;
+    }
+    
+    .station-hologram {
+        width: 60px;
+        height: 60px;
+    }
+    
+    table {
+        min-width: 300px;
+    }
+    
+    .sidebar.expanded {
+        position: absolute;
+        z-index: 100;
+        height: 100%;
+        box-shadow: 2px 0 15px rgba(0,0,0,0.3);
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+    
+    .topbar-left {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .digital-clock {
+        order: 3;
+        width: 100%;
+    }
+    
+    .chatbot-station-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .chatbot-status-indicator {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 576px) {
+    .modal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .station-hologram {
+        align-self: center;
+    }
+    
+    .topbar-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .sidebar.expanded {
+        width: 180px;
+    }
+    
+    .digital-clock {
+        min-width: 100px;
+    }
+    
+    .clock-time {
+        font-size: 10px;
+    }
+    
+    .chat-modal-content {
+        height: 85vh;
+    }
+}
+</style>
+</head>
+
+<body class="dark-mode">
+<div class="app">
+    <!-- SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-item" id="toggleSidebar">
+            <div class="sidebar-icon">
+                <i class="fas fa-bars"></i>
+            </div>
+            <div class="sidebar-text">Menu</div>
+        </div>
+        
+        <div class="sidebar-item active" id="dashboardItem" onclick="navigateToPage('dashboard')">
+            <div class="sidebar-icon">
+                <i class="fas fa-tint"></i>
+            </div>
+            <div class="sidebar-text">Dashboard Principal</div>
+        </div>
+        
+        <div class="sidebar-item" id="stationsItem" onclick="navigateToPage('stations-park')">
+            <div class="sidebar-icon">
+                <i class="fas fa-cube"></i>
+            </div>
+            <div class="sidebar-text">Parc des Stations</div>
+        </div>
+        
+        <div class="sidebar-item" id="mapItem" onclick="navigateToPage('map')">
+            <div class="sidebar-icon">
+                <i class="fas fa-map"></i>
+            </div>
+            <div class="sidebar-text">Carte</div>
+        </div>
+        
+        <div class="sidebar-item" id="visualizationItem" onclick="navigateToPage('visualization')">
+            <div class="sidebar-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="sidebar-text">Outils de Visualisation</div>
+        </div>
+        
+        <div class="sidebar-item" id="chatbotItem" onclick="navigateToPage('chatbot')">
+            <div class="sidebar-icon">
+                <div class="chatbot-icon">
+                    <div class="chatbot-head"></div>
+                    <div class="chatbot-helmet"></div>
+                </div>
+            </div>
+            <div class="sidebar-text">Chat Agents AI</div>
+        </div>
+        
+        <div class="sidebar-item" id="settingsItem" onclick="navigateToPage('settings')">
+            <div class="sidebar-icon">
+                <i class="fas fa-cog"></i>
+            </div>
+            <div class="sidebar-text">Paramètres</div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 id="pageTitle"><i class="fas fa-water"></i> SUPERVISION CENTRALISÉE - STATIONS DE DESSALEMENT</h1>
+                
+                <!-- Theme Switch -->
+                <div class="theme-switch">
+                    <span class="theme-switch-label">Mode Sombre</span>
+                    <label class="switch">
+                        <input type="checkbox" id="themeToggle">
+                        <span class="slider">
+                            <i class="fas fa-moon"></i>
+                            <i class="fas fa-sun"></i>
+                        </span>
+                    </label>
+                    <span class="theme-switch-label">Mode Clair</span>
+                </div>
+            </div>
+            
+            <!-- Digital Clock -->
+            <div class="digital-clock" id="digitalClock">
+                <div class="clock-time" id="clockTime">
+                    <span id="hours">00</span>
+                    <span class="clock-separator">:</span>
+                    <span id="minutes">00</span>
+                    <span class="clock-separator">:</span>
+                    <span id="seconds">00</span>
+                </div>
+                <div class="clock-date" id="clockDate">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="dateDay">01</span>
+                    <span id="dateMonth">Jan</span>
+                    <span id="dateYear">2024</span>
+                </div>
+            </div>
+            
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <i class="fas fa-user-helmet-safety"></i>
+                </div>
+                <div class="user-info">
+                    <div class="user-name">Schiele Operator</div>
+                    <div class="user-role">Supervision Agent</div>
+                </div>
+                <div class="user-status"></div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD PAGE -->
+        <section class="page active" id="dashboard-page">
+            <!-- MAP SECTION -->
+            <section class="map-section">
+                <h3><i class="fas fa-map-marked-alt"></i> CARTE ET LISTE DES STATIONS EN TEMPS RÉEL</h3>
+                <div class="map-container">
+                    <div id="map"></div>
+                    <div class="stations-list-sidebar">
+                        <h4><i class="fas fa-list"></i> STATIONS ACTIVES</h4>
+                        <div id="stationsList">
+                            <!-- Stations will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- KPI SECTION -->
+            <section class="kpi-section">
+                <h3><i class="fas fa-chart-bar"></i> INDICATEURS CLÉS DE PERFORMANCE EN TEMPS RÉEL</h3>
+                <div class="kpi-container" id="kpiContainer">
+                    <!-- KPI will be added here -->
+                </div>
+            </section>
+
+            <!-- TABLE SECTION -->
+            <section class="stations-table-section">
+                <h3><i class="fas fa-table"></i> TABLEAU DÉTAILLÉ DES STATIONS</h3>
+                <div class="table-info">Affichage de 4 stations sur 11 - Défilez pour voir plus</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Station</th>
+                                <th>TDS (ppm)</th>
+                                <th>Débit (m³/h)</th>
+                                <th>Pression (bar)</th>
+                                <th>État</th>
+                                <th>Capacité</th>
+                                <th>Énergie</th>
+                                <th>Température</th>
+                                <th>Détails</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stationsTable">
+                            <!-- Table data will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+
+        <!-- STATIONS PARK PAGE -->
+        <section class="page" id="stations-park-page">
+            <div class="stations-park-section">
+                <div class="stations-park-header">
+                    <h3><i class="fas fa-cube"></i> PARC DES STATIONS</h3>
+                    <div class="stations-park-info">Total: 11 stations actives</div>
+                </div>
+                <div class="stations-park-table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Station</th>
+                                <th>TDS (ppm)</th>
+                                <th>Débit (m³/h)</th>
+                                <th>Pression (bar)</th>
+                                <th>État</th>
+                                <th>Capacité</th>
+                                <th>Énergie</th>
+                                <th>Température</th>
+                                <th>Région</th>
+                                <th>Détails</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stationsParkTable">
+                            <!-- Table data will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAP PAGE -->
+        <section class="page" id="map-page">
+            <div class="map-page-section">
+                <div class="stations-park-header">
+                    <h3><i class="fas fa-map-marked-alt"></i> CARTE DES STATIONS</h3>
+                    <div class="stations-park-info">Cliquez sur un marqueur pour voir les détails</div>
+                </div>
+                <div class="map-page-container">
+                    <div id="fullMap"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISUALIZATION PAGE -->
+        <section class="page" id="visualization-page">
+            <div class="stations-park-section">
+                <div class="stations-park-header">
+                    <h3><i class="fas fa-chart-line"></i> OUTILS DE VISUALISATION</h3>
+                    <div class="stations-park-info">En développement - Disponible prochainement</div>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                    <div style="text-align: center; padding: 20px;">
+                        <i class="fas fa-chart-bar" style="font-size: 30px; margin-bottom: 10px; color: #4da6ff;"></i>
+                        <div style="font-size: 10px; margin-bottom: 5px;">Module de visualisation</div>
+                        <div style="font-size: 8px; color: #aaa;">Cette fonctionnalité sera disponible dans la prochaine mise à jour</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHATBOT PAGE -->
+        <section class="page" id="chatbot-page">
+            <div class="chatbot-ai-section">
+                <div class="stations-park-header">
+                    <h3><i class="fas fa-robot"></i> CHAT AGENTS AI - SUPERVISION INTELLIGENTE</h3>
+                    <div class="stations-park-info">Système d'assistance IA pour la surveillance des stations</div>
+                </div>
+                
+                <div class="chatbot-stations-list" id="chatbotStationsList">
+                    <!-- Liste des stations avec état du chatbot -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SETTINGS PAGE -->
+        <section class="page" id="settings-page">
+            <div class="stations-park-section">
+                <div class="stations-park-header">
+                    <h3><i class="fas fa-cog"></i> PARAMÈTRES</h3>
+                    <div class="stations-park-info">Configuration du système de supervision</div>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                    <div style="text-align: center; padding: 20px;">
+                        <i class="fas fa-sliders-h" style="font-size: 30px; margin-bottom: 10px; color: #4da6ff;"></i>
+                        <div style="font-size: 10px; margin-bottom: 5px;">Paramètres du système</div>
+                        <div style="font-size: 8px; color: #aaa;">Cette fonctionnalité sera disponible dans la prochaine mise à jour</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- MODAL AMÉLIORÉ -->
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="modal-header">
+            <div class="modal-header-left">
+                <div class="modal-title" id="modalTitle">
+                    <i class="fas fa-industry"></i> DÉTAILS COMPLETS DE LA STATION
+                </div>
+                <div class="modal-subtitle" id="modalSubtitle">
+                    <i class="fas fa-map-marker-alt"></i> 
+                    <span id="modalLocation">Chargement...</span>
+                    <span class="status-indicator" id="modalStatus" style="margin-left: 10px;">
+                        <span class="indicator-dot"></span>
+                        <span>Chargement...</span>
+                    </span>
+                </div>
+            </div>
+            
+            <div class="station-hologram">
+                <div class="hologram-container">
+                    <div class="hologram-base"></div>
+                    <div class="hologram-tank"></div>
+                    <div class="hologram-pipe hologram-pipe-1"></div>
+                    <div class="hologram-pipe hologram-pipe-2"></div>
+                    <div class="hologram-light"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-body">
+            <div class="modal-sections">
+                <!-- Informations générales -->
+                <div class="modal-section">
+                    <div class="section-header">
+                        <i class="fas fa-info-circle"></i>
+                        <h4>INFORMATIONS GÉNÉRALES</h4>
+                    </div>
+                    <div class="modal-grid" id="generalInfo">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+                
+                <!-- Paramètres techniques -->
+                <div class="modal-section">
+                    <div class="section-header">
+                        <i class="fas fa-cogs"></i>
+                        <h4>PARAMÈTRES TECHNIQUES</h4>
+                    </div>
+                    <div class="modal-grid" id="technicalParams">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+                
+                <!-- Pressions système -->
+                <div class="modal-section">
+                    <div class="section-header">
+                        <i class="fas fa-compress-alt"></i>
+                        <h4>PRESSIONS SYSTÈME</h4>
+                    </div>
+                    <div class="modal-grid" id="pressureSystem">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+                
+                <!-- Débits -->
+                <div class="modal-section">
+                    <div class="section-header">
+                        <i class="fas fa-water"></i>
+                        <h4>DÉBITS</h4>
+                    </div>
+                    <div class="modal-grid" id="flowSystem">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+                
+                <!-- Qualité de l'eau -->
+                <div class="modal-section">
+                    <div class="section-header">
+                        <i class="fas fa-flask"></i>
+                        <h4>QUALITÉ DE L'EAU</h4>
+                    </div>
+                    <div class="modal-grid" id="waterQuality">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="station-stats-sidebar">
+                <div class="stats-header">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>STATISTIQUES DE PERFORMANCE</span>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">
+                        <i class="fas fa-clock" style="color:#4da6ff"></i>
+                        <span>Disponibilité</span>
+                    </div>
+                    <div class="stat-value">98.2%</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">
+                        <i class="fas fa-bolt" style="color:#f1c40f"></i>
+                        <span>Énergie spécifique</span>
+                    </div>
+                    <div class="stat-value">3.45 <span class="stat-trend trend-down">-2.1%</span></div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">
+                        <i class="fas fa-tint" style="color:#1abc9c"></i>
+                        <span>Récupération</span>
+                    </div>
+                    <div class="stat-value">42.8% <span class="stat-trend trend-up">+1.3%</span></div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">
+                        <i class="fas fa-filter" style="color:#9b59b6"></i>
+                        <span>Rejet de sel</span>
+                    </div>
+                    <div class="stat-value">98.5%</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-label">
+                        <i class="fas fa-euro-sign" style="color:#27ae60"></i>
+                        <span>Coût/m³</span>
+                    </div>
+                    <div class="stat-value">2.85€ <span class="stat-trend trend-stable">±0%</span></div>
+                </div>
+                
+                <div class="progress-circle">
+                    <svg viewBox="0 0 36 36">
+                        <path class="circle-bg"
+                            d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path class="circle-progress"
+                            id="efficiencyCircle"
+                            stroke-dasharray="88, 100"
+                            d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                    </svg>
+                    <div class="progress-value" id="efficiencyValue">88%</div>
+                </div>
+                
+                <div class="performance-chart">
+                    <div class="chart-header">
+                        <div class="chart-title">Performance 7 derniers jours</div>
+                        <div class="chart-period">Jour 1-7</div>
+                    </div>
+                    <div class="chart-bars" id="performanceChart">
+                        <div class="chart-bar" style="height: 85%"></div>
+                        <div class="chart-bar" style="height: 92%"></div>
+                        <div class="chart-bar" style="height: 88%"></div>
+                        <div class="chart-bar" style="height: 95%"></div>
+                        <div class="chart-bar" style="height: 90%"></div>
+                        <div class="chart-bar" style="height: 87%"></div>
+                        <div class="chart-bar" style="height: 93%"></div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn btn-primary" onclick="generateReport()">
+                        <i class="fas fa-file-pdf"></i> Rapport PDF
+                    </button>
+                    <button class="action-btn btn-secondary" onclick="openHistoricalData()">
+                        <i class="fas fa-history"></i> Historique
+                    </button>
+                    <button class="action-btn btn-secondary" onclick="openAlerts()">
+                        <i class="fas fa-bell"></i> Alertes
+                    </button>
+                    <button class="action-btn btn-primary" onclick="openControlPanel()">
+                        <i class="fas fa-sliders-h"></i> Contrôles
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CHAT MODAL -->
+<div id="chatModal" class="chat-modal">
+    <div class="chat-modal-content">
+        <div class="chat-modal-header">
+            <div class="chat-modal-title" id="chatModalTitle">
+                <i class="fas fa-robot"></i> Assistant IA - 
+                <span id="chatStationName">Chargement...</span>
+            </div>
+            <button class="chat-modal-close" onclick="closeChatModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages de chat seront ajoutés ici -->
+        </div>
+        
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Tapez votre message..." onkeypress="handleChatInput(event)">
+            <button class="chat-send-btn" onclick="sendChatMessage()">
+                <i class="fas fa-paper-plane"></i> Envoyer
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ================= DONNÉES DES STATIONS =================
+const stations = [
+    {
+        id: 1,
+        name: "Rabat–Salé–Kénitra",
+        region: "Région Rabat",
+        lat: 34.02,
+        lon: -6.83,
+        tdsRange: [700, 850],
+        flowRange: [100, 140],
+        pressureRange: [55, 60],
+        capacity: 5000,
+        energyConsumption: 3.2,
+        temperatureRange: [18, 25]
+    },
+    {
+        id: 2,
+        name: "Casablanca-Settat",
+        region: "Région Casablanca",
+        lat: 33.57,
+        lon: -7.58,
+        tdsRange: [750, 900],
+        flowRange: [85, 120],
+        pressureRange: [52, 58],
+        capacity: 4500,
+        energyConsumption: 3.5,
+        temperatureRange: [20, 28]
+    },
+    {
+        id: 3,
+        name: "Marrakech-Safi",
+        region: "Région Marrakech",
+        lat: 31.63,
+        lon: -8.01,
+        tdsRange: [800, 950],
+        flowRange: [95, 130],
+        pressureRange: [50, 56],
+        capacity: 3800,
+        energyConsumption: 3.8,
+        temperatureRange: [22, 30]
+    },
+    {
+        id: 4,
+        name: "Tanger-Tétouan-Al Hoceïma",
+        region: "Région Tanger",
+        lat: 35.76,
+        lon: -5.80,
+        tdsRange: [650, 780],
+        flowRange: [110, 150],
+        pressureRange: [58, 63],
+        capacity: 5500,
+        energyConsumption: 3.0,
+        temperatureRange: [16, 22]
+    },
+    {
+        id: 5,
+        name: "Souss-Massa",
+        region: "Région Agadir",
+        lat: 30.42,
+        lon: -9.58,
+        tdsRange: [900, 1100],
+        flowRange: [75, 100],
+        pressureRange: [48, 54],
+        capacity: 3200,
+        energyConsumption: 4.2,
+        temperatureRange: [20, 26]
+    },
+    {
+        id: 6,
+        name: "Dakhla-Oued Ed-Dahab",
+        region: "Région Dakhla",
+        lat: 23.71,
+        lon: -15.94,
+        tdsRange: [950, 1200],
+        flowRange: [60, 90],
+        pressureRange: [45, 52],
+        capacity: 2800,
+        energyConsumption: 4.5,
+        temperatureRange: [22, 30]
+    },
+    {
+        id: 7,
+        name: "Laâyoune-Sakia El Hamra",
+        region: "Région Laâyoune",
+        lat: 27.15,
+        lon: -13.20,
+        tdsRange: [850, 1050],
+        flowRange: [70, 95],
+        pressureRange: [47, 53],
+        capacity: 3000,
+        energyConsumption: 4.3,
+        temperatureRange: [20, 28]
+    },
+    {
+        id: 8,
+        name: "Oriental",
+        region: "Région Oujda",
+        lat: 34.68,
+        lon: -1.91,
+        tdsRange: [780, 920],
+        flowRange: [80, 110],
+        pressureRange: [49, 55],
+        capacity: 3500,
+        energyConsumption: 3.6,
+        temperatureRange: [18, 26]
+    },
+    {
+        id: 9,
+        name: "Béni Mellal-Khénifra",
+        region: "Région Béni Mellal",
+        lat: 32.34,
+        lon: -6.36,
+        tdsRange: [820, 970],
+        flowRange: [90, 125],
+        pressureRange: [51, 57],
+        capacity: 4000,
+        energyConsumption: 3.7,
+        temperatureRange: [17, 25]
+    },
+    {
+        id: 10,
+        name: "Fès-Meknès",
+        region: "Région Fès",
+        lat: 34.04,
+        lon: -5.00,
+        tdsRange: [720, 860],
+        flowRange: [95, 135],
+        pressureRange: [53, 59],
+        capacity: 4200,
+        energyConsumption: 3.4,
+        temperatureRange: [16, 24]
+    },
+    {
+        id: 11,
+        name: "Drâa-Tafilalet",
+        region: "Région Errachidia",
+        lat: 31.93,
+        lon: -4.42,
+        tdsRange: [1000, 1250],
+        flowRange: [55, 85],
+        pressureRange: [44, 50],
+        capacity: 2500,
+        energyConsumption: 4.8,
+        temperatureRange: [24, 32]
+    }
+];
+
+// ================= ÉTATS POSSIBLES =================
+const statusTypes = [
+    { id: "ok", name: "OK", color: "#27ae60", probability: 0.6 },
+    { id: "minor", name: "Mineur", color: "#e67e22", probability: 0.15 },
+    { id: "major", name: "Majeur", color: "#d35400", probability: 0.1 },
+    { id: "critical", name: "Critique", color: "#e74c3c", probability: 0.08 },
+    { id: "warn", name: "Avertissement", color: "#f39c12", probability: 0.07 }
+];
+
+// ================= ÉTATS CHATBOT =================
+const chatbotStatusTypes = [
+    { id: "online", name: "En ligne", color: "#27ae60", probability: 0.7 },
+    { id: "offline", name: "Hors ligne", color: "#95a5a6", probability: 0.2 },
+    { id: "consult", name: "À consulter", color: "#f39c12", probability: 0.1 }
+];
+
+// ================= ANALYSES IA PRÉDÉFINIES =================
+const aiAnalyses = [
+    {
+        stationId: 1,
+        analysis: "📊 **ANALYSE IA - Station Rabat–Salé–Kénitra**\n\n✅ **Points positifs :**\n• TDS stable à 780 ppm (dans la plage optimale)\n• Débit de production à 125 m³/h (95% de capacité)\n• Efficacité énergétique excellente à 3.2 kWh/m³\n\n⚠️ **Recommandations :**\n• Surveiller la pression d'entrée RO (56 bar - limite haute)\n• Prévoir maintenance préventive pompe eau brute\n\n📈 **Performance :** 92/100 - Excellente"
+    },
+    {
+        stationId: 2,
+        analysis: "📊 **ANALYSE IA - Station Casablanca-Settat**\n\n✅ **Points positifs :**\n• Production stable à 110 m³/h\n• Température optimale à 24°C\n• Coût de production compétitif\n\n⚠️ **Alerte :**\n• TDS à 890 ppm (proche limite supérieure)\n• Pression aspiration légèrement basse\n\n💡 **Suggestion :**\n• Vérifier les préfiltres\n• Ajuster dosage anti-tartre\n\n📈 **Performance :** 85/100 - Bonne"
+    },
+    {
+        stationId: 3,
+        analysis: "📊 **ANALYSE IA - Station Marrakech-Safi**\n\n⚠️ **ATTENTION - Surveillance requise :**\n• TDS élevé à 920 ppm\n• Température eau à 28°C (limite haute)\n• Consommation énergétique à 3.8 kWh/m³\n\n🔧 **Actions recommandées :**\n• Augmenter débit de rinçage des membranes\n• Vérifier système de refroidissement\n• Contrôler dosage de produits chimiques\n\n📈 **Performance :** 78/100 - Surveillance"
+    },
+    {
+        stationId: 4,
+        analysis: "📊 **ANALYSE IA - Station Tanger-Tétouan-Al Hoceïma**\n\n✅ **Performance exceptionnelle :**\n• TDS optimal à 720 ppm\n• Débit maximal à 145 m³/h\n• Pression système parfaite\n• Énergie spécifique basse à 3.0 kWh/m³\n\n🏆 **Station modèle :**\n• Taux de récupération : 45%\n• Disponibilité : 99.8%\n• Coût/m³ le plus bas du réseau\n\n📈 **Performance :** 96/100 - Exemplaire"
+    },
+    {
+        stationId: 5,
+        analysis: "📊 **ANALYSE IA - Station Souss-Massa**\n\n⚠️ **Défis techniques :**\n• TDS très élevé à 1050 ppm (eau de mer)\n• Pression système limite basse\n• Consommation énergétique élevée\n\n💡 **Stratégie recommandée :**\n• Optimiser prétraitement chimique\n• Envisager étage RO supplémentaire\n• Programme de maintenance renforcé\n\n📈 **Performance :** 72/100 - Amélioration nécessaire"
+    }
+];
+
+// ================= RÉPONSES IA PRÉDÉFINIES =================
+const aiResponses = [
+    "J'analyse les données en temps réel de la station...",
+    "Je détecte des paramètres optimaux de fonctionnement.",
+    "Surveillance proactive activée pour cette station.",
+    "Aucune anomalie critique détectée pour le moment.",
+    "Les performances sont stables et conformes aux objectifs.",
+    "Je recommande une vérification de routine des capteurs.",
+    "Tous les systèmes fonctionnent dans les plages normales.",
+    "Je génère un rapport de performance détaillé...",
+    "Surveillance IA active - Je reste en alerte pour détecter toute dérive.",
+    "Les données historiques montrent une tendance positive."
+];
+
+// ================= VARIABLES GLOBALES =================
+let map;
+let fullMap;
+let markers = [];
+let fullMapMarkers = [];
+let currentStationId = null;
+let isDarkMode = true;
+let isSidebarExpanded = false;
+let currentPage = 'dashboard';
+let currentChatStationId = null;
+let chatMessages = {};
+
+// ================= NAVIGATION =================
+function navigateToPage(pageId) {
+    // Mettre à jour la page active
+    currentPage = pageId;
+    
+    // Masquer toutes les pages
+    document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+    });
+    
+    // Afficher la page sélectionnée
+    document.getElementById(pageId + '-page').classList.add('active');
+    
+    // Mettre à jour l'élément actif dans la sidebar
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Activer l'élément correspondant dans la sidebar
+    document.getElementById(pageId + 'Item').classList.add('active');
+    
+    // Mettre à jour le titre de la page
+    updatePageTitle(pageId);
+    
+    // Initialiser la page si nécessaire
+    if (pageId === 'stations-park') {
+        renderStationsParkTable();
+    } else if (pageId === 'map') {
+        initFullMap();
+    } else if (pageId === 'chatbot') {
+        renderChatbotStationsList();
+    }
+    
+    // Si on est en mode mobile, fermer le sidebar après clic
+    if (window.innerWidth <= 768 && isSidebarExpanded) {
+        toggleSidebar();
+    }
+    
+    showNotification(`Navigation vers: ${getPageTitle(pageId)}`);
+}
+
+function updatePageTitle(pageId) {
+    const pageTitle = document.getElementById('pageTitle');
+    const titles = {
+        'dashboard': '<i class="fas fa-tint"></i> SUPERVISION CENTRALISÉE - STATIONS DE DESSALEMENT',
+        'stations-park': '<i class="fas fa-cube"></i> PARC DES STATIONS',
+        'map': '<i class="fas fa-map-marked-alt"></i> CARTE DES STATIONS',
+        'visualization': '<i class="fas fa-chart-line"></i> OUTILS DE VISUALISATION',
+        'chatbot': '<i class="fas fa-robot"></i> CHAT AGENTS AI',
+        'settings': '<i class="fas fa-cog"></i> PARAMÈTRES'
+    };
+    
+    pageTitle.innerHTML = titles[pageId] || titles['dashboard'];
+}
+
+function getPageTitle(pageId) {
+    const titles = {
+        'dashboard': 'Dashboard Principal',
+        'stations-park': 'Parc des Stations',
+        'map': 'Carte',
+        'visualization': 'Outils de Visualisation',
+        'chatbot': 'Chat Agents AI',
+        'settings': 'Paramètres'
+    };
+    
+    return titles[pageId] || 'Dashboard Principal';
+}
+
+// ================= HORLOGE NUMÉRIQUE =================
+function updateDigitalClock() {
+    const now = new Date();
+    
+    // Format des heures, minutes, secondes avec 2 chiffres
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    // Mettre à jour l'heure
+    document.getElementById('hours').textContent = hours;
+    document.getElementById('minutes').textContent = minutes;
+    document.getElementById('seconds').textContent = seconds;
+    
+    // Format de la date
+    const day = String(now.getDate()).padStart(2, '0');
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+    const month = monthNames[now.getMonth()];
+    const year = now.getFullYear();
+    
+    // Mettre à jour la date
+    document.getElementById('dateDay').textContent = day;
+    document.getElementById('dateMonth').textContent = month;
+    document.getElementById('dateYear').textContent = year;
+}
+
+// ================= CHATBOT FUNCTIONALITY =================
+function renderChatbotStationsList() {
+    const chatbotList = document.getElementById('chatbotStationsList');
+    chatbotList.innerHTML = '';
+    
+    stations.forEach(station => {
+        // Générer un statut aléatoire pour le chatbot
+        const chatbotStatus = getRandomChatbotStatus();
+        station.chatbotStatus = chatbotStatus;
+        
+        const item = document.createElement('div');
+        item.className = 'chatbot-station-item';
+        item.dataset.stationId = station.id;
+        item.onclick = () => openChatModal(station.id);
+        
+        item.innerHTML = `
+            <div class="chatbot-station-info">
+                <div class="chatbot-station-name">${station.name}</div>
+                <div class="chatbot-station-region">${station.region}</div>
+            </div>
+            <div class="chatbot-status-indicator ${chatbotStatus.id}">
+                <span class="chatbot-status-dot"></span>
+                <span>${chatbotStatus.name}</span>
+            </div>
+        `;
+        
+        chatbotList.appendChild(item);
+    });
+}
+
+function getRandomChatbotStatus() {
+    const rand = Math.random();
+    let cumulative = 0;
+    
+    for (const status of chatbotStatusTypes) {
+        cumulative += status.probability;
+        if (rand <= cumulative) {
+            return status;
+        }
+    }
+    
+    return chatbotStatusTypes[0];
+}
+
+function openChatModal(stationId) {
+    const station = stations.find(s => s.id === stationId);
+    if (!station) return;
+    
+    currentChatStationId = stationId;
+    
+    // Initialiser les messages pour cette station si nécessaire
+    if (!chatMessages[stationId]) {
+        chatMessages[stationId] = [
+            {
+                type: 'bot',
+                text: `🤖 **Assistant IA - Station ${station.name}**\n\nBonjour! Je suis l'assistant IA de supervision pour la station ${station.name}. Je surveille en temps réel tous les paramètres de fonctionnement. Comment puis-je vous aider?`,
+                timestamp: getCurrentTime()
+            }
+        ];
+    }
+    
+    // Mettre à jour le titre du chat
+    document.getElementById('chatStationName').textContent = station.name;
+    
+    // Afficher la modal
+    const chatModal = document.getElementById('chatModal');
+    chatModal.style.display = 'flex';
+    
+    // Afficher les messages
+    renderChatMessages(stationId);
+    
+    // Ajouter une analyse IA après 1 seconde
+    setTimeout(() => {
+        addAIAnalysis(stationId);
+    }, 1000);
+}
+
+function closeChatModal() {
+    document.getElementById('chatModal').style.display = 'none';
+    currentChatStationId = null;
+}
+
+function renderChatMessages(stationId) {
+    const messagesContainer = document.getElementById('chatMessages');
+    messagesContainer.innerHTML = '';
+    
+    if (!chatMessages[stationId]) return;
+    
+    chatMessages[stationId].forEach((message, index) => {
+        const messageElement = document.createElement('div');
+        messageElement.className = `chat-message ${message.type} ${message.analysis ? 'analysis' : ''}`;
+        messageElement.innerHTML = message.text;
+        
+        messagesContainer.appendChild(messageElement);
+        
+        // Ajouter un timestamp pour le premier message
+        if (index === 0 && message.timestamp) {
+            const timestamp = document.createElement('div');
+            timestamp.className = 'chat-timestamp';
+            timestamp.textContent = message.timestamp;
+            messagesContainer.appendChild(timestamp);
+        }
+    });
+    
+    // Faire défiler vers le bas
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function addAIAnalysis(stationId) {
+    if (!chatMessages[stationId]) return;
+    
+    // Trouver une analyse spécifique pour cette station
+    const stationAnalysis = aiAnalyses.find(a => a.stationId === stationId);
+    
+    const analysis = stationAnalysis ? stationAnalysis.analysis : 
+        `📊 **ANALYSE IA - Données en temps réel**\n\n` +
+        `J'analyse actuellement les paramètres de la station. ` +
+        `Tous les systèmes semblent fonctionner normalement. ` +
+        `Je continue la surveillance proactive.`;
+    
+    chatMessages[stationId].push({
+        type: 'bot',
+        text: analysis,
+        analysis: true,
+        timestamp: getCurrentTime()
+    });
+    
+    if (currentChatStationId === stationId) {
+        renderChatMessages(stationId);
+    }
+}
+
+function sendChatMessage() {
+    if (!currentChatStationId) return;
+    
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Ajouter le message de l'utilisateur
+    chatMessages[currentChatStationId].push({
+        type: 'user',
+        text: message,
+        timestamp: getCurrentTime()
+    });
+    
+    // Effacer l'input
+    input.value = '';
+    
+    // Réafficher les messages
+    renderChatMessages(currentChatStationId);
+    
+    // Réponse IA après un délai
+    setTimeout(() => {
+        addAIResponse(currentChatStationId);
+    }, 1000 + Math.random() * 2000);
+}
+
+function handleChatInput(event) {
+    if (event.key === 'Enter') {
+        sendChatMessage();
+    }
+}
+
+function addAIResponse(stationId) {
+    if (!chatMessages[stationId]) return;
+    
+    // Sélectionner une réponse aléatoire
+    const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+    
+    chatMessages[stationId].push({
+        type: 'bot',
+        text: randomResponse,
+        timestamp: getCurrentTime()
+    });
+    
+    if (currentChatStationId === stationId) {
+        renderChatMessages(stationId);
+    }
+}
+
+function getCurrentTime() {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
+// ================= SIDEBAR MANAGEMENT =================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (isSidebarExpanded) {
+        sidebar.classList.remove('expanded');
+        overlay.classList.remove('active');
+    } else {
+        sidebar.classList.add('expanded');
+        if (window.innerWidth <= 768) {
+            overlay.classList.add('active');
+        }
+    }
+    
+    isSidebarExpanded = !isSidebarExpanded;
+    
+    // Sauvegarder l'état dans localStorage
+    localStorage.setItem('sidebarExpanded', isSidebarExpanded);
+}
+
+function showNotification(message) {
+    // Créer une notification temporaire
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: ${isDarkMode ? 'rgba(20, 40, 65, 0.9)' : 'rgba(255, 255, 255, 0.9)'};
+        color: ${isDarkMode ? '#f0f0f0' : '#333'};
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 8px;
+        border: 1px solid ${isDarkMode ? '#c44d8a' : '#dc3545'};
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Supprimer après 3 secondes
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// ================= THÈME =================
+function initTheme() {
+    const themeToggle = document.getElementById('themeToggle');
+    const themeSwitchLabels = document.querySelectorAll('.theme-switch-label');
+    
+    // Charger la préférence depuis localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        setLightMode();
+        themeToggle.checked = true;
+    }
+    
+    // Gérer le changement de thème
+    themeToggle.addEventListener('change', function() {
+        if (this.checked) {
+            setLightMode();
+        } else {
+            setDarkMode();
+        }
+    });
+}
+
+function setDarkMode() {
+    document.body.classList.remove('light-mode');
+    document.body.classList.add('dark-mode');
+    isDarkMode = true;
+    updateMapTheme();
+    if (fullMap) updateFullMapTheme();
+    localStorage.setItem('theme', 'dark');
+    
+    // Mettre à jour les labels du switch
+    document.querySelectorAll('.theme-switch-label')[0].textContent = 'Mode Sombre';
+    document.querySelectorAll('.theme-switch-label')[1].textContent = 'Mode Clair';
+}
+
+function setLightMode() {
+    document.body.classList.remove('dark-mode');
+    document.body.classList.add('light-mode');
+    isDarkMode = false;
+    updateMapTheme();
+    if (fullMap) updateFullMapTheme();
+    localStorage.setItem('theme', 'light');
+    
+    // Mettre à jour les labels du switch
+    document.querySelectorAll('.theme-switch-label')[0].textContent = 'Mode Sombre';
+    document.querySelectorAll('.theme-switch-label')[1].textContent = 'Mode Clair';
+}
+
+function updateMapTheme() {
+    if (map) {
+        if (isDarkMode) {
+            // Thème sombre pour la carte
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.TileLayer) {
+                    layer.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+                }
+            });
+        } else {
+            // Thème clair pour la carte
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.TileLayer) {
+                    layer.setUrl('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
+                }
+            });
+        }
+    }
+}
+
+function updateFullMapTheme() {
+    if (fullMap) {
+        if (isDarkMode) {
+            // Thème sombre pour la carte
+            fullMap.eachLayer(function(layer) {
+                if (layer instanceof L.TileLayer) {
+                    layer.setUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+                }
+            });
+        } else {
+            // Thème clair pour la carte
+            fullMap.eachLayer(function(layer) {
+                if (layer instanceof L.TileLayer) {
+                    layer.setUrl('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
+                }
+            });
+        }
+    }
+}
+
+// ================= FONCTIONS UTILITAIRES =================
+function getRandomNumber(min, max, decimals = 1) {
+    return (Math.random() * (max - min) + min).toFixed(decimals);
+}
+
+function getRandomStatus() {
+    const rand = Math.random();
+    let cumulative = 0;
+    
+    for (const status of statusTypes) {
+        cumulative += status.probability;
+        if (rand <= cumulative) {
+            return status;
+        }
+    }
+    
+    return statusTypes[0];
+}
+
+function getStatusClass(value, thresholds) {
+    if (value >= thresholds.good) return "kpi-good";
+    if (value >= thresholds.warning) return "kpi-warning";
+    return "kpi-critical";
+}
+
+// Fonction pour générer des données de pression aléatoires
+function getRandomPressure() {
+    return getRandomNumber(1, 10, 1);
+}
+
+// Fonction pour générer des données de débit aléatoires
+function getRandomFlow() {
+    return getRandomNumber(10, 150, 1);
+}
+
+// Fonction pour générer des données de conductivité aléatoires
+function getRandomConductivity() {
+    return getRandomNumber(100, 5000, 0);
+}
+
+// ================= INITIALISATION DES CARTES =================
+function initMap() {
+    map = L.map('map').setView([31.8, -6.3], 6);
+    
+    // Utiliser le thème approprié
+    if (isDarkMode) {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+    } else {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap, © CartoDB'
+        }).addTo(map);
+    }
+    
+    // Créer les marqueurs
+    createMapMarkers(map, markers);
+}
+
+function initFullMap() {
+    if (!fullMap) {
+        fullMap = L.map('fullMap').setView([31.8, -6.3], 6);
+        
+        // Utiliser le thème approprié
+        if (isDarkMode) {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(fullMap);
+        } else {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap, © CartoDB'
+            }).addTo(fullMap);
+        }
+        
+        // Créer les marqueurs
+        createMapMarkers(fullMap, fullMapMarkers, true);
+    }
+}
+
+function createMapMarkers(mapInstance, markersArray, isFullMap = false) {
+    markersArray.length = 0; // Vider le tableau
+    
+    stations.forEach(station => {
+        const markerColor = isDarkMode ? '#27ae60' : '#dc3545';
+        const marker = L.circleMarker([station.lat, station.lon], {
+            radius: isFullMap ? 10 : 6,
+            color: markerColor,
+            fillColor: markerColor,
+            fillOpacity: 0.8,
+            weight: 1
+        }).addTo(mapInstance);
+        
+        const popupBg = isDarkMode ? '#0e1f33' : '#ffffff';
+        const popupText = isDarkMode ? '#f0f0f0' : '#333';
+        const popupSecondary = isDarkMode ? '#666' : '#777';
+        const popupAccent = isDarkMode ? '#4da6ff' : '#dc3545';
+        
+        marker.bindPopup(`
+            <div style="padding:5px;min-width:90px;font-size:5px;background:${popupBg};color:${popupText}">
+                <div style="font-weight:bold;margin-bottom:2.5px;font-size:7px;color:${popupAccent}">
+                    <i class="fas fa-industry"></i> ${station.name}
+                </div>
+                <div style="color:${popupSecondary};font-size:5.5px;margin-bottom:1.5px;">
+                    ${station.region}
+                </div>
+                <div style="color:${popupAccent};font-size:6px;font-weight:bold;">
+                    Capacité: ${station.capacity.toLocaleString()} m³/j
+                </div>
+                <div style="margin-top:5px;text-align:center;">
+                    <button onclick="openModal(${station.id}); event.stopPropagation();" 
+                            style="background:${popupAccent};color:white;border:none;padding:3px 6px;border-radius:3px;font-size:5px;cursor:pointer;">
+                        <i class="fas fa-info-circle"></i> Détails
+                    </button>
+                </div>
+            </div>
+        `);
+        
+        marker.on('click', function() {
+            selectStation(station.id, isFullMap);
+        });
+        
+        marker.stationId = station.id;
+        markersArray.push(marker);
+        station[isFullMap ? 'fullMapMarker' : 'marker'] = marker;
+    });
+    
+    // Désélection en cliquant sur la carte
+    mapInstance.on('click', function() {
+        deselectStation(isFullMap);
+    });
+}
+
+// ================= LISTE DES STATIONS =================
+function renderStationsList() {
+    const stationsList = document.getElementById('stationsList');
+    stationsList.innerHTML = '';
+    
+    stations.forEach(station => {
+        const status = getRandomStatus();
+        const tds = getRandomNumber(station.tdsRange[0], station.tdsRange[1]);
+        const flow = getRandomNumber(station.flowRange[0], station.flowRange[1]);
+        const pressure = getRandomNumber(station.pressureRange[0], station.pressureRange[1]);
+        
+        station.currentStatus = status;
+        station.currentTDS = tds;
+        station.currentFlow = flow;
+        station.currentPressure = pressure;
+        
+        const listItem = document.createElement('div');
+        listItem.className = `station-list-item ${currentStationId === station.id ? 'selected' : ''}`;
+        listItem.dataset.stationId = station.id;
+        listItem.onclick = () => selectStation(station.id);
+        
+        listItem.innerHTML = `
+            <div class="station-header">
+                <div>
+                    <div class="station-name">${station.name}</div>
+                    <div class="station-region">${station.region}</div>
+                </div>
+                <span class="station-status" style="background:${status.color}20;color:${status.color}">
+                    ${status.name}
+                </span>
+            </div>
+            <div class="station-data">
+                <div class="data-item">
+                    <div class="data-label">TDS</div>
+                    <div class="data-value">${tds} ppm</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Débit</div>
+                    <div class="data-value">${flow} m³/h</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Pression</div>
+                    <div class="data-value">${pressure} bar</div>
+                </div>
+            </div>
+        `;
+        
+        stationsList.appendChild(listItem);
+        
+        // Mettre à jour le marqueur
+        if (station.marker) {
+            const markerColor = isDarkMode ? status.color : '#dc3545';
+            station.marker.setStyle({
+                color: markerColor,
+                fillColor: markerColor
+            });
+        }
+    });
+}
+
+// ================= TABLEAU DES STATIONS (Dashboard) =================
+function renderStationsTable() {
+    const tableBody = document.getElementById('stationsTable');
+    tableBody.innerHTML = '';
+    
+    stations.forEach(station => {
+        const status = station.currentStatus || getRandomStatus();
+        const tds = station.currentTDS || getRandomNumber(station.tdsRange[0], station.tdsRange[1]);
+        const flow = station.currentFlow || getRandomNumber(station.flowRange[0], station.flowRange[1]);
+        const pressure = station.currentPressure || getRandomNumber(station.pressureRange[0], station.pressureRange[1]);
+        const temperature = getRandomNumber(station.temperatureRange[0], station.temperatureRange[1]);
+        
+        const row = document.createElement('tr');
+        row.dataset.stationId = station.id;
+        row.onclick = () => selectStation(station.id);
+        if (currentStationId === station.id) row.classList.add('selected');
+        
+        const detailBtnColor = isDarkMode ? '#4da6ff' : '#dc3545';
+        
+        row.innerHTML = `
+            <td>
+                <strong>${station.name}</strong><br>
+                <small style="font-size:5px;color:${isDarkMode ? '#aaa' : '#666'}">${station.region}</small>
+            </td>
+            <td>${tds}</td>
+            <td>${flow}</td>
+            <td>${pressure}</td>
+            <td>
+                <span class="status-cell ${status.id}">
+                    <span class="status-dot"></span>
+                    ${status.name}
+                </span>
+            </td>
+            <td>${station.capacity.toLocaleString()} m³/j</td>
+            <td>${station.energyConsumption.toFixed(1)} kWh/m³</td>
+            <td>${temperature} °C</td>
+            <td>
+                <button onclick="openModal(${station.id}); event.stopPropagation();" 
+                        style="background:none; border:none; cursor:pointer; font-size:7px; padding:3px; color:${detailBtnColor}">
+                    <i class="fas fa-info-circle"></i> Détails
+                </button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+}
+
+// ================= TABLEAU PARC DES STATIONS =================
+function renderStationsParkTable() {
+    const tableBody = document.getElementById('stationsParkTable');
+    tableBody.innerHTML = '';
+    
+    stations.forEach(station => {
+        const status = station.currentStatus || getRandomStatus();
+        const tds = station.currentTDS || getRandomNumber(station.tdsRange[0], station.tdsRange[1]);
+        const flow = station.currentFlow || getRandomNumber(station.flowRange[0], station.flowRange[1]);
+        const pressure = station.currentPressure || getRandomNumber(station.pressureRange[0], station.pressureRange[1]);
+        const temperature = getRandomNumber(station.temperatureRange[0], station.temperatureRange[1]);
+        
+        const row = document.createElement('tr');
+        row.dataset.stationId = station.id;
+        row.onclick = () => selectStation(station.id, false, true);
+        
+        const detailBtnColor = isDarkMode ? '#4da6ff' : '#dc3545';
+        
+        row.innerHTML = `
+            <td>
+                <strong>${station.name}</strong>
+            </td>
+            <td>${tds}</td>
+            <td>${flow}</td>
+            <td>${pressure}</td>
+            <td>
+                <span class="status-cell ${status.id}">
+                    <span class="status-dot"></span>
+                    ${status.name}
+                </span>
+            </td>
+            <td>${station.capacity.toLocaleString()} m³/j</td>
+            <td>${station.energyConsumption.toFixed(1)} kWh/m³</td>
+            <td>${temperature} °C</td>
+            <td>${station.region}</td>
+            <td>
+                <button onclick="openModal(${station.id}); event.stopPropagation();" 
+                        style="background:none; border:none; cursor:pointer; font-size:7px; padding:3px; color:${detailBtnColor}">
+                    <i class="fas fa-info-circle"></i> Détails
+                </button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+}
+
+// ================= KPI =================
+function renderKPI() {
+    const kpiContainer = document.getElementById('kpiContainer');
+    kpiContainer.innerHTML = '';
+    
+    // Calculer les KPI
+    const operationalStations = stations.filter(s => 
+        s.currentStatus && (s.currentStatus.id === 'ok' || s.currentStatus.id === 'warn')
+    ).length;
+    
+    const totalFlow = stations.reduce((sum, station) => {
+        return sum + (parseFloat(station.currentFlow) || 0);
+    }, 0);
+    
+    const avgEnergy = stations.reduce((sum, station) => sum + station.energyConsumption, 0) / stations.length;
+    const availabilityRate = (operationalStations / stations.length) * 100;
+    const dailyProduction = totalFlow * 24;
+    const co2Reduction = dailyProduction * 0.5;
+    const recoveryRate = Math.random() * 15 + 35;
+    const specificEnergy = avgEnergy + (Math.random() - 0.5) * 0.3;
+    const waterQuality = 98.5;
+    const productionCost = (avgEnergy * 0.8).toFixed(2);
+    
+    // 1. Compteur - Production totale
+    const counterWidget = document.createElement('div');
+    counterWidget.className = 'kpi-widget kpi-counter';
+    counterWidget.innerHTML = `
+        <div class="kpi-label">Production Totale</div>
+        <div class="counter-value">${dailyProduction.toFixed(0)}</div>
+        <div class="kpi-unit">m³/jour</div>
+    `;
+    kpiContainer.appendChild(counterWidget);
+    
+    // 2. Badge - Taux de disponibilité
+    const badgeWidget = document.createElement('div');
+    badgeWidget.className = 'kpi-widget kpi-badge';
+    const badgeStatus = getStatusClass(availabilityRate, { good: 90, warning: 70 });
+    const badgeBgColor = badgeStatus === 'kpi-good' ? (isDarkMode ? '#27ae6020' : '#27ae6010') : 
+                        badgeStatus === 'kpi-warning' ? (isDarkMode ? '#f39c1220' : '#f39c1210') : 
+                        (isDarkMode ? '#e74c3c20' : '#e74c3c10');
+    
+    badgeWidget.innerHTML = `
+        <div class="badge-icon" style="background:${badgeBgColor};color:${badgeStatus === 'kpi-good' ? '#27ae60' : badgeStatus === 'kpi-warning' ? '#f39c12' : '#e74c3c'}">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="badge-content">
+            <div class="kpi-label">Disponibilité</div>
+            <div class="badge-score ${badgeStatus}">${availabilityRate.toFixed(1)}</div>
+            <div class="kpi-unit">/ 100%</div>
+        </div>
+    `;
+    kpiContainer.appendChild(badgeWidget);
+    
+    // 3. Progress Bar - Efficacité énergétique
+    const efficiency = 95 - (avgEnergy * 10);
+    const progressWidget = document.createElement('div');
+    progressWidget.className = 'kpi-widget kpi-progress';
+    const progressStatus = getStatusClass(efficiency, { good: 60, warning: 50 });
+    progressWidget.innerHTML = `
+        <div class="progress-header">
+            <div class="kpi-label">Efficacité Énergétique</div>
+            <span class="${progressStatus}">${efficiency.toFixed(1)}%</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${Math.min(efficiency, 100)}%; background: ${progressStatus === 'kpi-good' ? '#27ae60' : progressStatus === 'kpi-warning' ? '#f39c12' : '#e74c3c'}"></div>
+        </div>
+        <div class="kpi-unit">Score d'efficacité</div>
+    `;
+    kpiContainer.appendChild(progressWidget);
+    
+    // 4. Donut Chart - Taux de récupération
+    const donutWidget = document.createElement('div');
+    donutWidget.className = 'kpi-widget kpi-donut';
+    const donutStatus = getStatusClass(recoveryRate, { good: 45, warning: 40 });
+    const circumference = 2 * Math.PI * 13.5;
+    const strokeDasharray = `${(recoveryRate / 100) * circumference} ${circumference}`;
+    donutWidget.innerHTML = `
+        <div class="donut-container">
+            <svg class="donut-svg" viewBox="0 0 30 30">
+                <circle class="donut-circle-bg" cx="15" cy="15" r="13.5"></circle>
+                <circle class="donut-circle" cx="15" cy="15" r="13.5" 
+                        stroke="${donutStatus === 'kpi-good' ? '#27ae60' : donutStatus === 'kpi-warning' ? '#f39c12' : '#e74c3c'}" 
+                        stroke-dasharray="${strokeDasharray}"></circle>
+            </svg>
+            <div class="donut-value ${donutStatus}">${recoveryRate.toFixed(1)}</div>
+        </div>
+        <div class="donut-content">
+            <div class="kpi-label">Taux de Récupération</div>
+            <div class="kpi-unit">% d'eau récupérée</div>
+        </div>
+    `;
+    kpiContainer.appendChild(donutWidget);
+    
+    // 5. Compteur - Énergie spécifique
+    const energyWidget = document.createElement('div');
+    energyWidget.className = 'kpi-widget kpi-counter';
+    const energyStatus = getStatusClass(specificEnergy, { good: 3.5, warning: 4.0 });
+    energyWidget.innerHTML = `
+        <div class="kpi-label">
+            <i class="fas fa-bolt" style="color:${energyStatus === 'kpi-good' ? '#27ae60' : energyStatus === 'kpi-warning' ? '#f39c12' : '#e74c3c'}"></i>
+            Énergie Spécifique
+        </div>
+        <div class="counter-value" style="color:${energyStatus === 'kpi-good' ? '#27ae60' : energyStatus === 'kpi-warning' ? '#f39c12' : '#e74c3c'}">
+            ${specificEnergy.toFixed(2)}
+        </div>
+        <div class="kpi-unit">kWh/m³</div>
+    `;
+    kpiContainer.appendChild(energyWidget);
+    
+    // 6. Badge - Réduction CO₂
+    const co2Widget = document.createElement('div');
+    co2Widget.className = 'kpi-widget kpi-badge';
+    const co2BgColor = isDarkMode ? '#27ae6020' : '#27ae6010';
+    co2Widget.innerHTML = `
+        <div class="badge-icon" style="background:${co2BgColor};color:#27ae60">
+            <i class="fas fa-leaf"></i>
+        </div>
+        <div class="badge-content">
+            <div class="kpi-label">Réduction CO₂</div>
+            <div class="badge-score kpi-good">${co2Reduction.toFixed(0)}</div>
+            <div class="kpi-unit">kg/jour</div>
+        </div>
+    `;
+    kpiContainer.appendChild(co2Widget);
+    
+    // 7. Progress Bar - Qualité de l'eau
+    const qualityWidget = document.createElement('div');
+    qualityWidget.className = 'kpi-widget kpi-progress';
+    const qualityColor = isDarkMode ? '#4da6ff' : '#dc3545';
+    qualityWidget.innerHTML = `
+        <div class="progress-header">
+            <div class="kpi-label">
+                <i class="fas fa-filter" style="color:${qualityColor}"></i>
+                Qualité de l'Eau
+            </div>
+            <span class="kpi-good">${waterQuality}%</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${waterQuality}%; background: ${qualityColor}"></div>
+        </div>
+        <div class="kpi-unit">Taux de rejet de sel</div>
+    `;
+    kpiContainer.appendChild(qualityWidget);
+    
+    // 8. Badge - Coût de production
+    const costWidget = document.createElement('div');
+    costWidget.className = 'kpi-widget kpi-badge';
+    const costStatus = getStatusClass(productionCost, { good: 2.8, warning: 3.2 });
+    const costBgColor = costStatus === 'kpi-good' ? (isDarkMode ? '#27ae6020' : '#27ae6010') : 
+                       costStatus === 'kpi-warning' ? (isDarkMode ? '#f39c1220' : '#f39c1210') : 
+                       (isDarkMode ? '#e74c3c20' : '#e74c3c10');
+    
+    costWidget.innerHTML = `
+        <div class="badge-icon" style="background:${costBgColor};color:${costStatus === 'kpi-good' ? '#27ae60' : costStatus === 'kpi-warning' ? '#f39c12' : '#e74c3c'}">
+            <i class="fas fa-euro-sign"></i>
+        </div>
+        <div class="badge-content">
+            <div class="kpi-label">Coût de Production</div>
+            <div class="badge-score ${costStatus}">${productionCost}</div>
+            <div class="kpi-unit">€/m³</div>
+        </div>
+    `;
+    kpiContainer.appendChild(costWidget);
+}
+
+// ================= GESTION DES STATIONS =================
+function selectStation(stationId, isFullMap = false, fromParkTable = false) {
+    const activeMap = isFullMap ? fullMap : map;
+    const activeMarkers = isFullMap ? fullMapMarkers : markers;
+    const markerProperty = isFullMap ? 'fullMapMarker' : 'marker';
+    
+    // Désélectionner la station actuelle
+    if (currentStationId !== null) {
+        const prevRow = document.querySelector(`tr[data-station-id="${currentStationId}"]`);
+        if (prevRow) prevRow.classList.remove('selected');
+        
+        const prevListItem = document.querySelector(`.station-list-item[data-station-id="${currentStationId}"]`);
+        if (prevListItem) prevListItem.classList.remove('selected');
+        
+        const prevMarker = activeMarkers.find(m => m.stationId === currentStationId);
+        if (prevMarker) prevMarker.setStyle({ radius: isFullMap ? 10 : 6 });
+    }
+    
+    // Sélectionner la nouvelle station
+    currentStationId = stationId;
+    
+    // Mettre à jour la liste (seulement si on est dans le dashboard)
+    if (!fromParkTable && !isFullMap) {
+        const listItem = document.querySelector(`.station-list-item[data-station-id="${stationId}"]`);
+        if (listItem) listItem.classList.add('selected');
+    }
+    
+    // Mettre à jour le tableau (dashboard)
+    if (!fromParkTable && !isFullMap) {
+        const row = document.querySelector(`tr[data-station-id="${stationId}"]`);
+        if (row) row.classList.add('selected');
+    }
+    
+    // Mettre à jour le marqueur
+    const marker = activeMarkers.find(m => m.stationId === stationId);
+    if (marker) {
+        marker.setStyle({ radius: isFullMap ? 15 : 9 });
+        marker.openPopup();
+        
+        // Centrer la carte sur le marqueur
+        const station = stations.find(s => s.id === stationId);
+        if (activeMap) {
+            activeMap.setView([station.lat, station.lon], 8);
+        }
+    }
+}
+
+function deselectStation(isFullMap = false) {
+    const activeMarkers = isFullMap ? fullMapMarkers : markers;
+    
+    if (currentStationId !== null) {
+        const row = document.querySelector(`tr[data-station-id="${currentStationId}"]`);
+        if (row) row.classList.remove('selected');
+        
+        const listItem = document.querySelector(`.station-list-item[data-station-id="${currentStationId}"]`);
+        if (listItem) listItem.classList.remove('selected');
+        
+        const marker = activeMarkers.find(m => m.stationId === currentStationId);
+        if (marker) {
+            marker.setStyle({ radius: isFullMap ? 10 : 6 });
+            marker.closePopup();
+        }
+        
+        currentStationId = null;
+    }
+}
+
+// ================= MODAL AMÉLIORÉ =================
+function openModal(stationId) {
+    const station = stations.find(s => s.id === stationId);
+    if (!station) return;
+    
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSubtitle = document.getElementById('modalLocation');
+    const modalStatus = document.getElementById('modalStatus');
+    
+    const status = station.currentStatus || getRandomStatus();
+    
+    modalTitle.innerHTML = `<i class="fas fa-industry"></i> ${station.name}`;
+    modalSubtitle.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${station.region}`;
+    
+    // Mettre à jour le statut
+    modalStatus.innerHTML = `
+        <span class="indicator-dot"></span>
+        ${status.name}
+    `;
+    modalStatus.style.background = `${status.color}20`;
+    modalStatus.style.color = status.color;
+    modalStatus.querySelector('.indicator-dot').style.background = status.color;
+    
+    // Générer les données de la modal
+    generateModalData(station);
+    
+    // Mettre à jour le cercle de progression
+    const efficiency = getRandomNumber(85, 95, 0);
+    document.getElementById('efficiencyValue').textContent = `${efficiency}%`;
+    document.getElementById('efficiencyCircle').setAttribute('stroke-dasharray', `${efficiency}, 100`);
+    document.getElementById('efficiencyCircle').setAttribute('stroke', efficiency > 90 ? '#27ae60' : efficiency > 80 ? '#f39c12' : '#e74c3c');
+    
+    // Générer des barres de performance aléatoires
+    const chartBars = document.getElementById('performanceChart');
+    chartBars.innerHTML = '';
+    for (let i = 0; i < 7; i++) {
+        const height = getRandomNumber(70, 98, 0);
+        const bar = document.createElement('div');
+        bar.className = 'chart-bar';
+        bar.style.height = `${height}%`;
+        chartBars.appendChild(bar);
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function generateModalData(station) {
+    const status = station.currentStatus || getRandomStatus();
+    
+    // Informations générales
+    const generalInfo = document.getElementById('generalInfo');
+    generalInfo.innerHTML = `
+        <div class="data-card" style="border-left-color:${status.color}">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-blue">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="data-card-label">Statut actuel</div>
+            </div>
+            <div class="data-card-value" style="color:${status.color}">${status.name}</div>
+            <div class="data-card-unit">Dernière mise à jour: Maintenant</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#4da6ff">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-blue">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <div class="data-card-label">Capacité nominale</div>
+            </div>
+            <div class="data-card-value">${station.capacity.toLocaleString()}</div>
+            <div class="data-card-unit">m³/jour</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#9b59b6">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-purple">
+                    <i class="fas fa-filter"></i>
+                </div>
+                <div class="data-card-label">TDS eau brute</div>
+            </div>
+            <div class="data-card-value">${station.currentTDS || getRandomNumber(station.tdsRange[0], station.tdsRange[1])}</div>
+            <div class="data-card-unit">ppm</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#1abc9c">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-cyan">
+                    <i class="fas fa-water"></i>
+                </div>
+                <div class="data-card-label">Débit de production</div>
+            </div>
+            <div class="data-card-value">${station.currentFlow || getRandomNumber(station.flowRange[0], station.flowRange[1])}</div>
+            <div class="data-card-unit">m³/h</div>
+        </div>
+    `;
+    
+    // Paramètres techniques
+    const technicalParams = document.getElementById('technicalParams');
+    technicalParams.innerHTML = `
+        <div class="data-card" style="border-left-color:#f1c40f">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-yellow">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="data-card-label">Consommation énergétique</div>
+            </div>
+            <div class="data-card-value">${station.energyConsumption.toFixed(1)}</div>
+            <div class="data-card-unit">kWh/m³</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#e74c3c">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-red">
+                    <i class="fas fa-thermometer-half"></i>
+                </div>
+                <div class="data-card-label">Température eau</div>
+            </div>
+            <div class="data-card-value">${getRandomNumber(station.temperatureRange[0], station.temperatureRange[1])}</div>
+            <div class="data-card-unit">°C</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#c44d8a">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-pink">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="data-card-label">Temps de fonctionnement</div>
+            </div>
+            <div class="data-card-value">${getRandomNumber(1500, 5000, 0)}</div>
+            <div class="data-card-unit">heures</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#27ae60">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-green">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <div class="data-card-label">Réduction CO₂</div>
+            </div>
+            <div class="data-card-value">${(station.capacity * 0.5).toFixed(0)}</div>
+            <div class="data-card-unit">kg/jour</div>
+        </div>
+    `;
+    
+    // Pressions système
+    const pressureSystem = document.getElementById('pressureSystem');
+    pressureSystem.innerHTML = `
+        <div class="data-card" style="border-left-color:#4da6ff">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-blue">
+                    <i class="fas fa-compress-alt"></i>
+                </div>
+                <div class="data-card-label">Pression aspiration pompe eau brute</div>
+            </div>
+            <div class="data-card-value">${getRandomPressure()}</div>
+            <div class="data-card-unit">bar</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#4da6ff">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-blue">
+                    <i class="fas fa-compress-alt"></i>
+                </div>
+                <div class="data-card-label">Pression refoulement pompe eau brute</div>
+            </div>
+            <div class="data-card-value">${getRandomPressure()}</div>
+            <div class="data-card-unit">bar</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#9b59b6">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-purple">
+                    <i class="fas fa-filter"></i>
+                </div>
+                <div class="data-card-label">Turbidité eau filtrée</div>
+            </div>
+            <div class="data-card-value">${getRandomNumber(0.1, 1.5, 2)}</div>
+            <div class="data-card-unit">NTU</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#4da6ff">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-blue">
+                    <i class="fas fa-compress-alt"></i>
+                </div>
+                <div class="data-card-label">Pression entrée 1er étage RO</div>
+            </div>
+            <div class="data-card-value">${getRandomPressure()}</div>
+            <div class="data-card-unit">bar</div>
+        </div>
+    `;
+    
+    // Débits
+    const flowSystem = document.getElementById('flowSystem');
+    flowSystem.innerHTML = `
+        <div class="data-card" style="border-left-color:#1abc9c">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-cyan">
+                    <i class="fas fa-water"></i>
+                </div>
+                <div class="data-card-label">Débit pompe basse précision</div>
+            </div>
+            <div class="data-card-value">${getRandomFlow()}</div>
+            <div class="data-card-unit">m³/h</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#1abc9c">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-cyan">
+                    <i class="fas fa-water"></i>
+                </div>
+                <div class="data-card-label">Débit eau traité</div>
+            </div>
+            <div class="data-card-value">${getRandomFlow()}</div>
+            <div class="data-card-unit">m³/h</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#1abc9c">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-cyan">
+                    <i class="fas fa-water"></i>
+                </div>
+                <div class="data-card-label">Débit concentra</div>
+            </div>
+            <div class="data-card-value">${getRandomFlow()}</div>
+            <div class="data-card-unit">m³/h</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#1abc9c">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-cyan">
+                    <i class="fas fa-water"></i>
+                </div>
+                <div class="data-card-label">Débit eau livré</div>
+            </div>
+            <div class="data-card-value">${getRandomFlow()}</div>
+            <div class="data-card-unit">m³/h</div>
+        </div>
+    `;
+    
+    // Qualité de l'eau
+    const waterQuality = document.getElementById('waterQuality');
+    waterQuality.innerHTML = `
+        <div class="data-card" style="border-left-color:#9b59b6">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-purple">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <div class="data-card-label">Conductivité eau produite</div>
+            </div>
+            <div class="data-card-value">${getRandomConductivity()}</div>
+            <div class="data-card-unit">µS/cm</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#e74c3c">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-red">
+                    <i class="fas fa-thermometer-half"></i>
+                </div>
+                <div class="data-card-label">Température eau produite</div>
+            </div>
+            <div class="data-card-value">${getRandomNumber(station.temperatureRange[0], station.temperatureRange[1])}</div>
+            <div class="data-card-unit">°C</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#9b59b6">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-purple">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <div class="data-card-label">pH après reminéralisation</div>
+            </div>
+            <div class="data-card-value">${getRandomNumber(7.5, 8.5, 1)}</div>
+            <div class="data-card-unit">pH</div>
+        </div>
+        
+        <div class="data-card" style="border-left-color:#f39c12">
+            <div class="data-card-header">
+                <div class="data-card-icon icon-orange">
+                    <i class="fas fa-vial"></i>
+                </div>
+                <div class="data-card-label">Chlore résiduel</div>
+            </div>
+            <div class="data-card-value">${getRandomNumber(0.1, 0.5, 2)}</div>
+            <div class="data-card-unit">mg/l</div>
+        </div>
+    `;
+}
+
+function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+}
+
+// Fonctions pour les boutons d'action
+function generateReport() {
+    alert("Génération du rapport PDF en cours...");
+}
+
+function openHistoricalData() {
+    alert("Ouverture des données historiques...");
+}
+
+function openAlerts() {
+    alert("Affichage des alertes de la station...");
+}
+
+function openControlPanel() {
+    alert("Ouverture du panneau de contrôle...");
+}
+
+// Fermer la modal en cliquant en dehors
+document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+
+// Fermer la chat modal en cliquant en dehors
+document.getElementById('chatModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeChatModal();
+    }
+});
+
+// Fermer avec Échap
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+        closeChatModal();
+    }
+});
+
+// ================= MISE À JOUR DYNAMIQUE =================
+function updateAllData() {
+    stations.forEach(station => {
+        const status = getRandomStatus();
+        station.currentStatus = status;
+        station.currentTDS = getRandomNumber(station.tdsRange[0], station.tdsRange[1]);
+        station.currentFlow = getRandomNumber(station.flowRange[0], station.flowRange[1]);
+        station.currentPressure = getRandomNumber(station.pressureRange[0], station.pressureRange[1]);
+        
+        if (station.marker) {
+            const markerColor = isDarkMode ? status.color : '#dc3545';
+            station.marker.setStyle({
+                color: markerColor,
+                fillColor: markerColor
+            });
+        }
+        
+        if (station.fullMapMarker) {
+            const markerColor = isDarkMode ? status.color : '#dc3545';
+            station.fullMapMarker.setStyle({
+                color: markerColor,
+                fillColor: markerColor
+            });
+        }
+    });
+    
+    renderStationsList();
+    renderStationsTable();
+    renderKPI();
+    
+    // Mettre à jour le tableau du parc des stations si on est sur cette page
+    if (currentPage === 'stations-park') {
+        renderStationsParkTable();
+    }
+    
+    // Mettre à jour la liste des chatbots si on est sur cette page
+    if (currentPage === 'chatbot') {
+        renderChatbotStationsList();
+    }
+}
+
+// ================= INITIALISATION =================
+function init() {
+    // Initialiser le thème
+    initTheme();
+    
+    // Initialiser l'horloge
+    updateDigitalClock();
+    setInterval(updateDigitalClock, 1000);
+    
+    // Initialiser l'état du sidebar
+    const savedSidebarState = localStorage.getItem('sidebarExpanded');
+    if (savedSidebarState === 'true') {
+        toggleSidebar();
+    }
+    
+    // Ajouter l'événement au bouton toggle
+    document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+    
+    // Initialiser la carte et les données du dashboard
+    initMap();
+    renderStationsList();
+    renderStationsTable();
+    renderKPI();
+    
+    // Mettre à jour toutes les 800ms pour un flux rapide
+    setInterval(updateAllData, 800);
+    
+    // Sélectionner la première station
+    setTimeout(() => selectStation(1), 100);
+}
+
+// Gérer le redimensionnement de la fenêtre
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+        document.getElementById('sidebarOverlay').classList.remove('active');
+    } else if (isSidebarExpanded) {
+        document.getElementById('sidebarOverlay').classList.add('active');
+    }
+});
+
+// Démarrer l'application
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
