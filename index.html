@@ -8,6 +8,9 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+<!-- Chart.js pour les visualisations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -1159,6 +1162,216 @@ body.light-mode .map-page-section {
     width: 100%;
     height: 100%;
     min-height: 400px;
+}
+
+/* ================= VISUALIZATION PAGE ================= */
+.visualization-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 10px;
+    padding: 10px;
+    transition: all 0.5s ease;
+}
+
+body.dark-mode .visualization-section {
+    background: rgba(14, 31, 51, 0.7);
+    border: 1px solid #c44d8a;
+}
+
+body.light-mode .visualization-section {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #dc3545;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.visualization-header {
+    margin-bottom: 10px;
+    padding-bottom: 7.5px;
+    border-bottom: 1px solid;
+}
+
+body.dark-mode .visualization-header {
+    border-bottom-color: rgba(196, 77, 138, 0.3);
+}
+
+body.light-mode .visualization-header {
+    border-bottom-color: rgba(220, 53, 69, 0.3);
+}
+
+.visualization-header h3 {
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body.dark-mode .visualization-header h3 {
+    color: #f0f0f0;
+}
+
+body.light-mode .visualization-header h3 {
+    color: #333;
+}
+
+.visualization-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+body.dark-mode .visualization-controls {
+    background: rgba(20, 40, 65, 0.8);
+    border: 1px solid rgba(196, 77, 138, 0.2);
+}
+
+body.light-mode .visualization-controls {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(220, 53, 69, 0.1);
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 120px;
+}
+
+.control-label {
+    font-size: 6px;
+    font-weight: 600;
+}
+
+body.dark-mode .control-label {
+    color: #aaa;
+}
+
+body.light-mode .control-label {
+    color: #666;
+}
+
+.control-select, .control-input {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 7px;
+    border: 1px solid;
+    background: none;
+    outline: none;
+}
+
+body.dark-mode .control-select, 
+body.dark-mode .control-input {
+    color: #f0f0f0;
+    border-color: rgba(196, 77, 138, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.light-mode .control-select, 
+body.light-mode .control-input {
+    color: #333;
+    border-color: rgba(220, 53, 69, 0.3);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.control-btn {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 7px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+body.dark-mode .control-btn {
+    background: linear-gradient(135deg, #4da6ff, #2c80ff);
+    color: white;
+}
+
+body.light-mode .control-btn {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.visualization-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 10px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.chart-container {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+body.light-mode .chart-container {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.chart-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .chart-container:hover {
+    border-color: rgba(196, 77, 138, 0.5);
+}
+
+body.light-mode .chart-container:hover {
+    border-color: rgba(220, 53, 69, 0.3);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid;
+}
+
+body.dark-mode .chart-header {
+    border-bottom-color: rgba(196, 77, 138, 0.2);
+}
+
+body.light-mode .chart-header {
+    border-bottom-color: rgba(220, 53, 69, 0.2);
+}
+
+.chart-title {
+    font-size: 9px;
+    font-weight: 600;
+}
+
+body.dark-mode .chart-title {
+    color: #f0f0f0;
+}
+
+body.light-mode .chart-title {
+    color: #333;
+}
+
+.chart-canvas-container {
+    position: relative;
+    height: 200px;
+    width: 100%;
 }
 
 /* ================= CHATBOT AI PAGE ================= */
@@ -2573,6 +2786,10 @@ body.light-mode ::-webkit-scrollbar-thumb {
     .modal-body {
         grid-template-columns: 1fr;
     }
+    
+    .visualization-charts {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 1200px) {
@@ -2596,6 +2813,10 @@ body.light-mode ::-webkit-scrollbar-thumb {
     }
     
     .modal-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .visualization-charts {
         grid-template-columns: 1fr;
     }
 }
@@ -2637,6 +2858,14 @@ body.light-mode ::-webkit-scrollbar-thumb {
     .chat-modal-content {
         width: 95%;
         height: 80vh;
+    }
+    
+    .visualization-controls {
+        flex-direction: column;
+    }
+    
+    .control-group {
+        min-width: 100%;
     }
 }
 
@@ -2691,6 +2920,10 @@ body.light-mode ::-webkit-scrollbar-thumb {
     
     .chatbot-status-indicator {
         align-self: flex-start;
+    }
+    
+    .visualization-charts {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -2937,17 +3170,62 @@ body.light-mode ::-webkit-scrollbar-thumb {
 
         <!-- VISUALIZATION PAGE -->
         <section class="page" id="visualization-page">
-            <div class="stations-park-section">
-                <div class="stations-park-header">
+            <div class="visualization-section">
+                <div class="visualization-header">
                     <h3><i class="fas fa-chart-line"></i> OUTILS DE VISUALISATION</h3>
-                    <div class="stations-park-info">En développement - Disponible prochainement</div>
+                    <div class="stations-park-info">Analyse des données historiques et en temps réel</div>
                 </div>
-                <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
-                    <div style="text-align: center; padding: 20px;">
-                        <i class="fas fa-chart-bar" style="font-size: 30px; margin-bottom: 10px; color: #4da6ff;"></i>
-                        <div style="font-size: 10px; margin-bottom: 5px;">Module de visualisation</div>
-                        <div style="font-size: 8px; color: #aaa;">Cette fonctionnalité sera disponible dans la prochaine mise à jour</div>
+                
+                <div class="visualization-controls">
+                    <div class="control-group">
+                        <div class="control-label">Station</div>
+                        <select class="control-select" id="vizStationSelect">
+                            <option value="all">Toutes les stations</option>
+                            <!-- Options seront ajoutées dynamiquement -->
+                        </select>
                     </div>
+                    
+                    <div class="control-group">
+                        <div class="control-label">Période</div>
+                        <select class="control-select" id="vizPeriodSelect">
+                            <option value="realtime">Temps réel (30 derniers jours)</option>
+                            <option value="day">Aujourd'hui</option>
+                            <option value="week">7 derniers jours</option>
+                            <option value="month">30 derniers jours</option>
+                            <option value="year">12 derniers mois</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-label">Paramètre</div>
+                        <select class="control-select" id="vizParamSelect">
+                            <option value="tds">TDS (ppm)</option>
+                            <option value="flow">Débit (m³/h)</option>
+                            <option value="pressure">Pression (bar)</option>
+                            <option value="temperature">Température (°C)</option>
+                            <option value="energy">Énergie (kWh/m³)</option>
+                            <option value="status">Statut</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-label">Type de graphique</div>
+                        <select class="control-select" id="vizChartType">
+                            <option value="line">Ligne</option>
+                            <option value="bar">Barres</option>
+                            <option value="radar">Radar</option>
+                            <option value="gauge">Jauge</option>
+                            <option value="pie">Camembert</option>
+                        </select>
+                    </div>
+                    
+                    <button class="control-btn" onclick="updateVisualization()">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
+                </div>
+                
+                <div class="visualization-charts" id="visualizationCharts">
+                    <!-- Les graphiques seront ajoutés ici -->
                 </div>
             </div>
         </section>
@@ -3403,6 +3681,98 @@ const aiResponses = [
     "Les données historiques montrent une tendance positive."
 ];
 
+// ================= DONNÉES HISTORIQUES POUR VISUALISATION =================
+const historicalData = {
+    // Données historiques générées aléatoirement pour chaque station
+    generateData(stationId, period, parameter) {
+        const data = [];
+        const now = new Date();
+        
+        let dataPoints = 30; // Valeur par défaut pour 30 jours
+        
+        switch(period) {
+            case 'day':
+                dataPoints = 24; // Heures de la journée
+                break;
+            case 'week':
+                dataPoints = 7; // 7 jours
+                break;
+            case 'month':
+                dataPoints = 30; // 30 jours
+                break;
+            case 'year':
+                dataPoints = 12; // 12 mois
+                break;
+            default:
+                dataPoints = 30;
+        }
+        
+        const station = stations.find(s => s.id === stationId);
+        if (!station) return [];
+        
+        for (let i = 0; i < dataPoints; i++) {
+            let value;
+            let label;
+            
+            switch(parameter) {
+                case 'tds':
+                    value = getRandomNumber(station.tdsRange[0], station.tdsRange[1]);
+                    break;
+                case 'flow':
+                    value = getRandomNumber(station.flowRange[0], station.flowRange[1]);
+                    break;
+                case 'pressure':
+                    value = getRandomNumber(station.pressureRange[0], station.pressureRange[1]);
+                    break;
+                case 'temperature':
+                    value = getRandomNumber(station.temperatureRange[0], station.temperatureRange[1]);
+                    break;
+                case 'energy':
+                    value = station.energyConsumption + (Math.random() - 0.5) * 0.5;
+                    break;
+                case 'status':
+                    value = Math.random() * 100; // Score de performance
+                    break;
+                default:
+                    value = Math.random() * 100;
+            }
+            
+            if (period === 'day') {
+                label = `${i}h`;
+            } else if (period === 'week') {
+                label = `J${i+1}`;
+            } else if (period === 'month') {
+                label = `J${i+1}`;
+            } else {
+                label = `M${i+1}`;
+            }
+            
+            data.push({
+                label: label,
+                value: parseFloat(value.toFixed(2))
+            });
+        }
+        
+        return data;
+    },
+    
+    // Données agrégées pour toutes les stations
+    getAllStationsData(period, parameter) {
+        const allData = [];
+        
+        stations.forEach(station => {
+            const stationData = this.generateData(station.id, period, parameter);
+            allData.push({
+                stationId: station.id,
+                stationName: station.name,
+                data: stationData
+            });
+        });
+        
+        return allData;
+    }
+};
+
 // ================= VARIABLES GLOBALES =================
 let map;
 let fullMap;
@@ -3414,6 +3784,7 @@ let isSidebarExpanded = false;
 let currentPage = 'dashboard';
 let currentChatStationId = null;
 let chatMessages = {};
+let visualizationCharts = {}; // Stocker les instances Chart.js
 
 // ================= NAVIGATION =================
 function navigateToPage(pageId) {
@@ -3446,6 +3817,8 @@ function navigateToPage(pageId) {
         initFullMap();
     } else if (pageId === 'chatbot') {
         renderChatbotStationsList();
+    } else if (pageId === 'visualization') {
+        initVisualization();
     }
     
     // Si on est en mode mobile, fermer le sidebar après clic
@@ -3507,6 +3880,292 @@ function updateDigitalClock() {
     document.getElementById('dateDay').textContent = day;
     document.getElementById('dateMonth').textContent = month;
     document.getElementById('dateYear').textContent = year;
+}
+
+// ================= VISUALIZATION FUNCTIONALITY =================
+function initVisualization() {
+    // Remplir le sélecteur de stations
+    const stationSelect = document.getElementById('vizStationSelect');
+    stationSelect.innerHTML = '<option value="all">Toutes les stations</option>';
+    
+    stations.forEach(station => {
+        const option = document.createElement('option');
+        option.value = station.id;
+        option.textContent = station.name;
+        stationSelect.appendChild(option);
+    });
+    
+    // Initialiser les visualisations
+    updateVisualization();
+}
+
+function updateVisualization() {
+    const stationId = document.getElementById('vizStationSelect').value;
+    const period = document.getElementById('vizPeriodSelect').value;
+    const parameter = document.getElementById('vizParamSelect').value;
+    const chartType = document.getElementById('vizChartType').value;
+    
+    // Nettoyer les anciens graphiques
+    const chartsContainer = document.getElementById('visualizationCharts');
+    chartsContainer.innerHTML = '';
+    
+    // Détruire les instances Chart.js existantes
+    Object.values(visualizationCharts).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+            chart.destroy();
+        }
+    });
+    visualizationCharts = {};
+    
+    if (stationId === 'all') {
+        // Afficher un graphique pour chaque station
+        createAllStationsCharts(period, parameter, chartType);
+    } else {
+        // Afficher un graphique détaillé pour une station
+        createStationChart(parseInt(stationId), period, parameter, chartType);
+    }
+}
+
+function createAllStationsCharts(period, parameter, chartType) {
+    const chartsContainer = document.getElementById('visualizationCharts');
+    
+    // Créer un graphique pour chaque station
+    stations.forEach(station => {
+        const chartId = `chart-${station.id}`;
+        const chartContainer = document.createElement('div');
+        chartContainer.className = 'chart-container';
+        chartContainer.id = chartId;
+        
+        chartContainer.innerHTML = `
+            <div class="chart-header">
+                <div class="chart-title">${station.name} - ${getParameterName(parameter)}</div>
+                <div class="stations-park-info">${getPeriodName(period)}</div>
+            </div>
+            <div class="chart-canvas-container">
+                <canvas id="chartCanvas-${station.id}"></canvas>
+            </div>
+        `;
+        
+        chartsContainer.appendChild(chartContainer);
+        
+        // Générer les données
+        const data = historicalData.generateData(station.id, period, parameter);
+        createChart(`chartCanvas-${station.id}`, station.name, data, parameter, chartType);
+    });
+}
+
+function createStationChart(stationId, period, parameter, chartType) {
+    const chartsContainer = document.getElementById('visualizationCharts');
+    const station = stations.find(s => s.id === stationId);
+    
+    // Graphique principal
+    const mainChartId = 'main-chart';
+    const mainChartContainer = document.createElement('div');
+    mainChartContainer.className = 'chart-container';
+    mainChartContainer.id = mainChartId;
+    
+    mainChartContainer.innerHTML = `
+        <div class="chart-header">
+            <div class="chart-title">${station.name} - ${getParameterName(parameter)}</div>
+            <div class="stations-park-info">${getPeriodName(period)}</div>
+        </div>
+        <div class="chart-canvas-container">
+            <canvas id="mainChartCanvas"></canvas>
+        </div>
+    `;
+    
+    chartsContainer.appendChild(mainChartContainer);
+    
+    // Générer les données
+    const data = historicalData.generateData(stationId, period, parameter);
+    createChart('mainChartCanvas', station.name, data, parameter, chartType);
+    
+    // Graphiques supplémentaires pour d'autres paramètres
+    const otherParameters = ['tds', 'flow', 'pressure', 'temperature', 'energy'].filter(p => p !== parameter);
+    
+    otherParameters.forEach(otherParam => {
+        const chartId = `chart-${otherParam}`;
+        const chartContainer = document.createElement('div');
+        chartContainer.className = 'chart-container';
+        chartContainer.id = chartId;
+        
+        chartContainer.innerHTML = `
+            <div class="chart-header">
+                <div class="chart-title">${station.name} - ${getParameterName(otherParam)}</div>
+                <div class="stations-park-info">${getPeriodName(period)}</div>
+            </div>
+            <div class="chart-canvas-container">
+                <canvas id="chartCanvas-${otherParam}"></canvas>
+            </div>
+        `;
+        
+        chartsContainer.appendChild(chartContainer);
+        
+        const otherData = historicalData.generateData(stationId, period, otherParam);
+        createChart(`chartCanvas-${otherParam}`, station.name, otherData, otherParam, 'line');
+    });
+}
+
+function createChart(canvasId, stationName, data, parameter, chartType) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    
+    const labels = data.map(item => item.label);
+    const values = data.map(item => item.value);
+    
+    // Définir les couleurs selon le thème
+    const primaryColor = isDarkMode ? '#4da6ff' : '#dc3545';
+    const backgroundColor = isDarkMode ? 
+        `rgba(77, 166, 255, ${chartType === 'line' ? '0.2' : '0.6'})` : 
+        `rgba(220, 53, 69, ${chartType === 'line' ? '0.2' : '0.6'})`;
+    const borderColor = isDarkMode ? '#4da6ff' : '#dc3545';
+    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    const textColor = isDarkMode ? '#f0f0f0' : '#333';
+    
+    const chartConfig = {
+        type: chartType === 'gauge' ? 'doughnut' : chartType,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: `${stationName} - ${getParameterName(parameter)} (${getParameterUnit(parameter)})`,
+                data: values,
+                backgroundColor: chartType === 'line' ? backgroundColor : 
+                               chartType === 'radar' ? backgroundColor : 
+                               chartType === 'pie' ? [
+                                    '#27ae60', '#f39c12', '#e74c3c', '#9b59b6', '#3498db',
+                                    '#1abc9c', '#e67e22', '#34495e', '#f1c40f', '#c44d8a'
+                               ] : backgroundColor,
+                borderColor: borderColor,
+                borderWidth: chartType === 'line' || chartType === 'radar' ? 2 : 1,
+                fill: chartType === 'line' || chartType === 'radar',
+                tension: chartType === 'line' ? 0.4 : 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: textColor,
+                        font: {
+                            size: 7
+                        }
+                    }
+                },
+                tooltip: {
+                    titleFont: {
+                        size: 7
+                    },
+                    bodyFont: {
+                        size: 7
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.parsed.y || context.parsed} ${getParameterUnit(parameter)}`;
+                        }
+                    }
+                }
+            },
+            scales: chartType !== 'pie' && chartType !== 'doughnut' ? {
+                x: {
+                    ticks: {
+                        color: textColor,
+                        font: {
+                            size: 6
+                        }
+                    },
+                    grid: {
+                        color: gridColor
+                    }
+                },
+                y: {
+                    beginAtZero: parameter !== 'tds' && parameter !== 'temperature' && parameter !== 'energy',
+                    ticks: {
+                        color: textColor,
+                        font: {
+                            size: 6
+                        },
+                        callback: function(value) {
+                            return value + (getParameterUnit(parameter) ? ` ${getParameterUnit(parameter)}` : '');
+                        }
+                    },
+                    grid: {
+                        color: gridColor
+                    }
+                }
+            } : undefined,
+            elements: {
+                point: {
+                    radius: chartType === 'line' ? 3 : 0,
+                    hoverRadius: 5
+                }
+            }
+        }
+    };
+    
+    // Configurations spécifiques pour les jauges
+    if (chartType === 'gauge') {
+        chartConfig.options.circumference = 180;
+        chartConfig.options.rotation = -90;
+        chartConfig.options.cutout = '70%';
+        chartConfig.plugins.tooltip.enabled = false;
+        
+        // Ajouter une annotation pour la valeur actuelle
+        const currentValue = values[values.length - 1];
+        chartConfig.options.plugins.annotation = {
+            annotations: {
+                valueText: {
+                    type: 'label',
+                    xValue: 0,
+                    yValue: 0,
+                    content: `${currentValue} ${getParameterUnit(parameter)}`,
+                    font: {
+                        size: 12,
+                        weight: 'bold'
+                    },
+                    color: textColor
+                }
+            }
+        };
+    }
+    
+    const chart = new Chart(ctx, chartConfig);
+    visualizationCharts[canvasId] = chart;
+}
+
+function getParameterName(parameter) {
+    const names = {
+        'tds': 'TDS',
+        'flow': 'Débit',
+        'pressure': 'Pression',
+        'temperature': 'Température',
+        'energy': 'Consommation énergétique',
+        'status': 'Score de performance'
+    };
+    return names[parameter] || parameter;
+}
+
+function getParameterUnit(parameter) {
+    const units = {
+        'tds': 'ppm',
+        'flow': 'm³/h',
+        'pressure': 'bar',
+        'temperature': '°C',
+        'energy': 'kWh/m³',
+        'status': '%'
+    };
+    return units[parameter] || '';
+}
+
+function getPeriodName(period) {
+    const names = {
+        'realtime': 'Temps réel',
+        'day': 'Aujourd\'hui',
+        'week': '7 derniers jours',
+        'month': '30 derniers jours',
+        'year': '12 derniers mois'
+    };
+    return names[period] || period;
 }
 
 // ================= CHATBOT FUNCTIONALITY =================
@@ -3777,6 +4436,9 @@ function setDarkMode() {
     // Mettre à jour les labels du switch
     document.querySelectorAll('.theme-switch-label')[0].textContent = 'Mode Sombre';
     document.querySelectorAll('.theme-switch-label')[1].textContent = 'Mode Clair';
+    
+    // Mettre à jour les graphiques si ils existent
+    updateChartsTheme();
 }
 
 function setLightMode() {
@@ -3790,6 +4452,9 @@ function setLightMode() {
     // Mettre à jour les labels du switch
     document.querySelectorAll('.theme-switch-label')[0].textContent = 'Mode Sombre';
     document.querySelectorAll('.theme-switch-label')[1].textContent = 'Mode Clair';
+    
+    // Mettre à jour les graphiques si ils existent
+    updateChartsTheme();
 }
 
 function updateMapTheme() {
@@ -3832,9 +4497,36 @@ function updateFullMapTheme() {
     }
 }
 
+function updateChartsTheme() {
+    // Mettre à jour tous les graphiques existants
+    Object.values(visualizationCharts).forEach(chart => {
+        if (chart && chart.options) {
+            const textColor = isDarkMode ? '#f0f0f0' : '#333';
+            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            
+            if (chart.options.plugins && chart.options.plugins.legend) {
+                chart.options.plugins.legend.labels.color = textColor;
+            }
+            
+            if (chart.options.scales) {
+                if (chart.options.scales.x) {
+                    chart.options.scales.x.ticks.color = textColor;
+                    chart.options.scales.x.grid.color = gridColor;
+                }
+                if (chart.options.scales.y) {
+                    chart.options.scales.y.ticks.color = textColor;
+                    chart.options.scales.y.grid.color = gridColor;
+                }
+            }
+            
+            chart.update();
+        }
+    });
+}
+
 // ================= FONCTIONS UTILITAIRES =================
 function getRandomNumber(min, max, decimals = 1) {
-    return (Math.random() * (max - min) + min).toFixed(decimals);
+    return parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
 }
 
 function getRandomStatus() {
@@ -3911,11 +4603,18 @@ function initFullMap() {
     }
 }
 
+// CORRECTION DU BUG: Les marqueurs doivent utiliser la couleur du statut dans tous les modes
 function createMapMarkers(mapInstance, markersArray, isFullMap = false) {
     markersArray.length = 0; // Vider le tableau
     
     stations.forEach(station => {
-        const markerColor = isDarkMode ? '#27ae60' : '#dc3545';
+        // CORRECTION: Générer un statut et utiliser sa couleur
+        const status = getRandomStatus();
+        station.currentStatus = status; // Sauvegarder le statut
+        
+        // CORRECTION: Utiliser toujours la couleur du statut, pas une couleur fixe
+        const markerColor = status.color;
+        
         const marker = L.circleMarker([station.lat, station.lon], {
             radius: isFullMap ? 10 : 6,
             color: markerColor,
@@ -3970,7 +4669,7 @@ function renderStationsList() {
     stationsList.innerHTML = '';
     
     stations.forEach(station => {
-        const status = getRandomStatus();
+        const status = station.currentStatus || getRandomStatus();
         const tds = getRandomNumber(station.tdsRange[0], station.tdsRange[1]);
         const flow = getRandomNumber(station.flowRange[0], station.flowRange[1]);
         const pressure = getRandomNumber(station.pressureRange[0], station.pressureRange[1]);
@@ -4013,12 +4712,11 @@ function renderStationsList() {
         
         stationsList.appendChild(listItem);
         
-        // Mettre à jour le marqueur
+        // CORRECTION: Mettre à jour le marqueur avec la couleur du statut
         if (station.marker) {
-            const markerColor = isDarkMode ? status.color : '#dc3545';
             station.marker.setStyle({
-                color: markerColor,
-                fillColor: markerColor
+                color: status.color,
+                fillColor: status.color
             });
         }
     });
@@ -4694,19 +5392,18 @@ function updateAllData() {
         station.currentFlow = getRandomNumber(station.flowRange[0], station.flowRange[1]);
         station.currentPressure = getRandomNumber(station.pressureRange[0], station.pressureRange[1]);
         
+        // CORRECTION: Mettre à jour les marqueurs avec la couleur du statut
         if (station.marker) {
-            const markerColor = isDarkMode ? status.color : '#dc3545';
             station.marker.setStyle({
-                color: markerColor,
-                fillColor: markerColor
+                color: status.color,
+                fillColor: status.color
             });
         }
         
         if (station.fullMapMarker) {
-            const markerColor = isDarkMode ? status.color : '#dc3545';
             station.fullMapMarker.setStyle({
-                color: markerColor,
-                fillColor: markerColor
+                color: status.color,
+                fillColor: status.color
             });
         }
     });
@@ -4723,6 +5420,11 @@ function updateAllData() {
     // Mettre à jour la liste des chatbots si on est sur cette page
     if (currentPage === 'chatbot') {
         renderChatbotStationsList();
+    }
+    
+    // Mettre à jour les visualisations si on est sur cette page
+    if (currentPage === 'visualization') {
+        updateVisualization();
     }
 }
 
